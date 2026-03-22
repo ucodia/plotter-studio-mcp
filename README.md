@@ -51,17 +51,14 @@ Edit both CSVs with your actual gear. `pen.csv` columns are `name`, `type`, `tip
 Plug in your webcam(s), then run:
 
 ```bash
-uv run python -c "
-import cv2
-for i in range(5):
-    cap = cv2.VideoCapture(i)
-    if cap.isOpened():
-        print(f'Camera {i}: available')
-        cap.release()
+uv run --with cv2-enumerate-cameras python -c "
+from cv2_enumerate_cameras import enumerate_cameras
+for cam in enumerate_cameras():
+    print(f'{cam.index}: {cam.name}')
 "
 ```
 
-Note down which index is your overhead camera and which is your angle camera (if you have two).
+Note down the indices for your overhead camera and angle camera (if you have two). These go into `MONET_CAMERAS` in the next step.
 
 ### 4. Configure Claude Desktop
 
