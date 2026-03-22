@@ -157,7 +157,9 @@ async def monet_plot_svg(params: PlotSvgInput) -> str:
         str: JSON with job status and saved SVG path.
     """
     if plotter_state.status == PlotterState.PLOTTING:
-        return json.dumps({"error": "A plot is already running. Wait for it to finish."})
+        return json.dumps(
+            {"error": "A plot is already running. Wait for it to finish."}
+        )
 
     if plotter_state.status == PlotterState.WAITING_PEN_CHANGE:
         return json.dumps({"error": "Waiting for pen change. Confirm before plotting."})
@@ -168,7 +170,9 @@ async def monet_plot_svg(params: PlotSvgInput) -> str:
         svg = wrap_svg(svg)
 
     # Save SVG to file
-    filename = params.filename or f"monet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
+    filename = (
+        params.filename or f"monet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
+    )
     if not filename.endswith(".svg"):
         filename += ".svg"
     svg_path = SVG_DIR / filename
@@ -197,14 +201,16 @@ async def monet_plot_svg(params: PlotSvgInput) -> str:
     )
     thread.start()
 
-    return json.dumps({
-        "status": "plotting_started",
-        "svg_path": str(svg_path),
-        "filename": filename,
-        "paper_size": f"{PAPER_WIDTH_INCHES}x{PAPER_HEIGHT_INCHES} inches portrait",
-        "dpi": DPI,
-        "canvas_px": f"{PAPER_WIDTH_PX}x{PAPER_HEIGHT_PX}",
-    })
+    return json.dumps(
+        {
+            "status": "plotting_started",
+            "svg_path": str(svg_path),
+            "filename": filename,
+            "paper_size": f"{PAPER_WIDTH_INCHES}x{PAPER_HEIGHT_INCHES} inches portrait",
+            "dpi": DPI,
+            "canvas_px": f"{PAPER_WIDTH_PX}x{PAPER_HEIGHT_PX}",
+        }
+    )
 
 
 class PreviewSvgInput(BaseModel):
@@ -242,13 +248,17 @@ async def monet_preview_svg(params: PreviewSvgInput) -> str:
     if not svg.startswith("<?xml") and not svg.startswith("<svg"):
         svg = wrap_svg(svg)
 
-    filename = params.filename or f"preview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
+    filename = (
+        params.filename or f"preview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
+    )
     if not filename.endswith(".svg"):
         filename += ".svg"
     svg_path = SVG_DIR / filename
     svg_path.write_text(svg, encoding="utf-8")
 
-    return json.dumps({"status": "saved", "svg_path": str(svg_path), "filename": filename})
+    return json.dumps(
+        {"status": "saved", "svg_path": str(svg_path), "filename": filename}
+    )
 
 
 # ---- Status tools ----------------------------------------------------------
@@ -327,18 +337,23 @@ async def monet_request_pen_change(params: PenChangeInput) -> str:
 
     plotter_state.request_pen_change(params.pen_description)
     logger.info(f"Pen change requested: {params.pen_description}")
-    _send_webhook("pen_change_requested", {
-        "pen": params.pen_description,
-        "notes": params.notes,
-        "message": message,
-    })
+    _send_webhook(
+        "pen_change_requested",
+        {
+            "pen": params.pen_description,
+            "notes": params.notes,
+            "message": message,
+        },
+    )
 
-    return json.dumps({
-        "status": "waiting_for_pen_change",
-        "pen_requested": params.pen_description,
-        "notes": params.notes,
-        "message": message,
-    })
+    return json.dumps(
+        {
+            "status": "waiting_for_pen_change",
+            "pen_requested": params.pen_description,
+            "notes": params.notes,
+            "message": message,
+        }
+    )
 
 
 @mcp.tool(
@@ -359,14 +374,18 @@ async def monet_confirm_pen_change() -> str:
         str: JSON confirming the plotter is ready.
     """
     if plotter_state.status != PlotterState.WAITING_PEN_CHANGE:
-        return json.dumps({
-            "status": plotter_state.status,
-            "message": "No pen change was pending.",
-        })
+        return json.dumps(
+            {
+                "status": plotter_state.status,
+                "message": "No pen change was pending.",
+            }
+        )
 
     plotter_state.confirm_pen_change()
     logger.info("Pen change confirmed.")
-    return json.dumps({"status": "idle", "message": "Pen change confirmed. Ready to plot."})
+    return json.dumps(
+        {"status": "idle", "message": "Pen change confirmed. Ready to plot."}
+    )
 
 
 # ---- Camera tools ----------------------------------------------------------
@@ -412,22 +431,28 @@ async def monet_capture(params: CaptureInput) -> list:
         cameras_to_capture.append(("angle", CAMERA_ANGLE_INDEX))
 
     if not cameras_to_capture:
-        return [{"type": "text", "text": "No cameras available for the requested view."}]
+        return [
+            {"type": "text", "text": "No cameras available for the requested view."}
+        ]
 
     for name, idx in cameras_to_capture:
         frame_b64 = await asyncio.to_thread(_capture_frame, idx)
         if frame_b64:
             results.append({"type": "text", "text": f"--- {name} camera ---"})
-            results.append({
-                "type": "image",
-                "data": frame_b64,
-                "mimeType": "image/jpeg",
-            })
+            results.append(
+                {
+                    "type": "image",
+                    "data": frame_b64,
+                    "mimeType": "image/jpeg",
+                }
+            )
         else:
-            results.append({
-                "type": "text",
-                "text": f"Failed to capture from {name} camera (index {idx}).",
-            })
+            results.append(
+                {
+                    "type": "text",
+                    "text": f"Failed to capture from {name} camera (index {idx}).",
+                }
+            )
 
     return results
 
@@ -453,14 +478,18 @@ async def monet_get_pen_inventory() -> str:
         str: JSON array of pen entries, or an error if no inventory is configured.
     """
     if not INVENTORY_PATH:
-        return json.dumps({
-            "error": "No inventory file configured. Set MONET_INVENTORY env var.",
-            "hint": "Point it to an .xlsx or .csv file with columns like: name, type, tip_size, color",
-        })
+        return json.dumps(
+            {
+                "error": "No inventory file configured. Set MONET_INVENTORY env var.",
+                "hint": "Point it to an .xlsx or .csv file with columns like: name, type, tip_size, color",
+            }
+        )
 
     inventory = await asyncio.to_thread(_load_inventory, INVENTORY_PATH)
     if not inventory:
-        return json.dumps({"error": f"Inventory file is empty or not found: {INVENTORY_PATH}"})
+        return json.dumps(
+            {"error": f"Inventory file is empty or not found: {INVENTORY_PATH}"}
+        )
 
     return json.dumps({"count": len(inventory), "pens": inventory})
 
@@ -483,14 +512,20 @@ async def monet_get_paper_inventory() -> str:
         str: JSON array of paper entries, or an error if no inventory is configured.
     """
     if not PAPER_INVENTORY_PATH:
-        return json.dumps({
-            "error": "No paper inventory file configured. Set MONET_PAPER_INVENTORY env var.",
-            "hint": "Point it to an .xlsx or .csv file with columns like: name, brand, type, width_inches, height_inches, orientation, notes",
-        })
+        return json.dumps(
+            {
+                "error": "No paper inventory file configured. Set MONET_PAPER_INVENTORY env var.",
+                "hint": "Point it to an .xlsx or .csv file with columns like: name, brand, type, width_inches, height_inches, orientation, notes",
+            }
+        )
 
     papers = await asyncio.to_thread(_load_paper_inventory, PAPER_INVENTORY_PATH)
     if not papers:
-        return json.dumps({"error": f"Paper inventory file is empty or not found: {PAPER_INVENTORY_PATH}"})
+        return json.dumps(
+            {
+                "error": f"Paper inventory file is empty or not found: {PAPER_INVENTORY_PATH}"
+            }
+        )
 
     return json.dumps({"count": len(papers), "papers": papers})
 
@@ -515,17 +550,19 @@ async def monet_get_paper_info() -> str:
     Returns:
         str: JSON with paper size in inches, pixels, and DPI.
     """
-    return json.dumps({
-        "paper": "Fabriano watercolor cold press",
-        "orientation": "portrait",
-        "width_inches": PAPER_WIDTH_INCHES,
-        "height_inches": PAPER_HEIGHT_INCHES,
-        "dpi": DPI,
-        "width_px": PAPER_WIDTH_PX,
-        "height_px": PAPER_HEIGHT_PX,
-        "origin": "top-left corner",
-        "note": "Pen starts at top-left. All SVG coordinates at 96 DPI.",
-    })
+    return json.dumps(
+        {
+            "paper": "Fabriano watercolor cold press",
+            "orientation": "portrait",
+            "width_inches": PAPER_WIDTH_INCHES,
+            "height_inches": PAPER_HEIGHT_INCHES,
+            "dpi": DPI,
+            "width_px": PAPER_WIDTH_PX,
+            "height_px": PAPER_HEIGHT_PX,
+            "origin": "top-left corner",
+            "note": "Pen starts at top-left. All SVG coordinates at 96 DPI.",
+        }
+    )
 
 
 # ---- Manual control tools --------------------------------------------------
@@ -537,10 +574,16 @@ class ManualMoveInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     x_inches: float = Field(
-        ..., description="X position in inches from left edge.", ge=0, le=PAPER_WIDTH_INCHES
+        ...,
+        description="X position in inches from left edge.",
+        ge=0,
+        le=PAPER_WIDTH_INCHES,
     )
     y_inches: float = Field(
-        ..., description="Y position in inches from top edge.", ge=0, le=PAPER_HEIGHT_INCHES
+        ...,
+        description="Y position in inches from top edge.",
+        ge=0,
+        le=PAPER_HEIGHT_INCHES,
     )
 
 
@@ -697,11 +740,13 @@ async def monet_notify(params: NotifyInput) -> str:
     """
     logger.info(f"NOTIFICATION: {params.message}")
     _send_webhook("notification", {"message": params.message})
-    return json.dumps({
-        "status": "notified",
-        "message": params.message,
-        "timestamp": datetime.now().isoformat(),
-    })
+    return json.dumps(
+        {
+            "status": "notified",
+            "message": params.message,
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

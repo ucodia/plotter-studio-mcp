@@ -12,11 +12,11 @@ logger = logging.getLogger("monet")
 
 # Event display config: (title, tags, priority)
 _WEBHOOK_EVENTS = {
-    "plot_started":         ("Plot Started",        "art,arrow_forward",    "3"),
-    "plot_complete":        ("Plot Complete",        "art,white_check_mark", "3"),
-    "plot_error":           ("Plot Error",           "art,x",                "5"),
-    "pen_change_requested": ("Pen Change Needed",    "pen,raised_hand",      "5"),
-    "notification":         ("Monet",                "speech_balloon",       "3"),
+    "plot_started": ("Plot Started", "art,arrow_forward", "3"),
+    "plot_complete": ("Plot Complete", "art,white_check_mark", "3"),
+    "plot_error": ("Plot Error", "art,x", "5"),
+    "pen_change_requested": ("Pen Change Needed", "pen,raised_hand", "5"),
+    "notification": ("Monet", "speech_balloon", "3"),
 }
 
 # Module-level webhook URL, set by server at startup
@@ -39,7 +39,9 @@ def _send_webhook(event: str, data: Dict[str, Any]) -> None:
 
     def _post():
         title, tags, priority = _WEBHOOK_EVENTS.get(event, ("Monet", "robot", "3"))
-        message = data.get("message") or data.get("pen") or data.get("filename") or event
+        message = (
+            data.get("message") or data.get("pen") or data.get("filename") or event
+        )
 
         is_ntfy = "ntfy" in _webhook_url.lower()
 
@@ -60,11 +62,13 @@ def _send_webhook(event: str, data: Dict[str, Any]) -> None:
                 body = (str(message) + "\n" + "\n".join(details)).encode("utf-8")
         else:
             # Generic JSON webhook
-            body = json.dumps({
-                "event": event,
-                "timestamp": datetime.now().isoformat(),
-                **data,
-            }).encode("utf-8")
+            body = json.dumps(
+                {
+                    "event": event,
+                    "timestamp": datetime.now().isoformat(),
+                    **data,
+                }
+            ).encode("utf-8")
             headers = {"Content-Type": "application/json"}
 
         req = urllib.request.Request(

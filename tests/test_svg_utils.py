@@ -39,7 +39,7 @@ def test_wrap_svg_has_correct_dimensions():
 
     assert f'width="{PAPER_WIDTH_INCHES}in"' in result
     assert f'height="{PAPER_HEIGHT_INCHES}in"' in result
-    assert f"viewBox=\"0 0 {PAPER_WIDTH_PX} {PAPER_HEIGHT_PX}\"" in result
+    assert f'viewBox="0 0 {PAPER_WIDTH_PX} {PAPER_HEIGHT_PX}"' in result
 
 
 def test_wrap_svg_preserves_content():

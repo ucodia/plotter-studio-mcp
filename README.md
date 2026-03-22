@@ -17,11 +17,14 @@ Monet connects Claude to an AxiDraw pen plotter and webcams via the Model Contex
 
 ## Requirements
 
-- Python 3.10+
-- AxiDraw pen plotter (A3 model) with pyaxidraw installed
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
+- Python 3.13+
+- AxiDraw pen plotter (A3 model)
 - One or two USB webcams
 
-## Installation
+## Quick start
+
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/ucodia/monet-mcp.git
@@ -29,54 +32,84 @@ cd monet-mcp
 uv sync
 ```
 
-## Setup
+This creates a virtual environment and installs all dependencies (MCP SDK, pyaxidraw, OpenCV, etc.).
 
-### 1. Configure Claude Desktop
+### 2. Set up your inventories
 
-Add this to your `claude_desktop_config.json`:
+Copy the templates from `examples/` somewhere convenient and fill them with your actual gear:
+
+```bash
+cp examples/pen_inventory_template.csv ~/monet_pen_inventory.csv
+cp examples/paper_inventory_template.csv ~/monet_paper_inventory.csv
+```
+
+Edit the CSVs with your pens and papers. The pen inventory columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. The paper inventory columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `orientation`, `notes`.
+
+### 3. Find your camera indices
+
+Plug in your webcam(s), then run:
+
+```bash
+uv run python -c "
+import cv2
+for i in range(5):
+    cap = cv2.VideoCapture(i)
+    if cap.isOpened():
+        print(f'Camera {i}: available')
+        cap.release()
+"
+```
+
+Note down which index is your overhead camera and which is your angle camera (if you have two).
+
+### 4. Configure Claude Desktop
+
+Open your Claude Desktop config file:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the `monet` server. Replace `/absolute/path/to/monet-mcp` with the actual path where you cloned the repo, and update the other paths to match your setup:
 
 ```json
 {
     "mcpServers": {
         "monet": {
             "command": "uv",
-            "args": ["run", "monet"],
+            "args": [
+                "--directory", "/absolute/path/to/monet-mcp",
+                "run", "monet"
+            ],
             "env": {
-                "MONET_INVENTORY": "/path/to/pen_inventory.csv",
-                "MONET_PAPER_INVENTORY": "/path/to/paper_inventory.csv",
+                "MONET_INVENTORY": "/absolute/path/to/monet_pen_inventory.csv",
+                "MONET_PAPER_INVENTORY": "/absolute/path/to/monet_paper_inventory.csv",
                 "MONET_CAMERA_TOP": "0",
                 "MONET_CAMERA_ANGLE": "1",
-                "MONET_SVG_DIR": "/path/to/svg/output",
-                "MONET_WEBHOOK_URL": "https://ntfy.sh/monet-mcp"
+                "MONET_SVG_DIR": "/absolute/path/to/svg/output",
+                "MONET_WEBHOOK_URL": "https://ntfy.sh/your-topic-name"
             }
         }
     }
 }
 ```
 
-### 2. Set up your inventories
+`MONET_CAMERA_ANGLE`, `MONET_SVG_DIR`, `MONET_PAPER_INVENTORY`, and `MONET_WEBHOOK_URL` are all optional. See the environment variables table below for defaults.
 
-Copy the templates from `examples/` and fill them with your actual gear:
+### 5. Restart Claude Desktop
 
-- **Pen inventory**: `pen_inventory_template.csv` with columns `name`, `type`, `tip_size_mm`, `color`, `notes`
-- **Paper inventory**: `paper_inventory_template.csv` with columns `name`, `brand`, `type`, `width_inches`, `height_inches`, `orientation`, `notes`
+Quit and reopen Claude Desktop. You should see Monet listed as a connected MCP server (look for the hammer icon in the chat input area). If it doesn't appear, check the MCP logs in Claude Desktop's developer console.
 
-### 3. Find your camera indices
+### 6. Test it
 
-If you're not sure which index is which camera:
+Ask Claude something like:
 
-```python
-import cv2
-for i in range(5):
-    cap = cv2.VideoCapture(i)
-    if cap.isOpened():
-        print(f"Camera {i}: available")
-        cap.release()
-```
+> What's the plotter status?
 
-### 4. Test the connection
+or
 
-Start Claude Desktop. Ask Claude to check the plotter status or capture a camera frame.
+> Capture a photo from the top camera so I can see the paper.
+
+If both respond without errors, you're ready to make art.
 
 ## Tools
 
@@ -103,11 +136,35 @@ Start Claude Desktop. Ask Claude to check the plotter status or capture a camera
 - Origin: top-left corner of the paper
 - Pen starts at (0, 0)
 
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MONET_INVENTORY` | (none) | Path to pen inventory .xlsx or .csv |
+| `MONET_PAPER_INVENTORY` | (none) | Path to paper inventory .xlsx or .csv |
+| `MONET_CAMERA_TOP` | `0` | Video device index for overhead camera |
+| `MONET_CAMERA_ANGLE` | `-1` | Video device index for angle camera (-1 disables it) |
+| `MONET_SVG_DIR` | `~/monet_svgs` | Directory to save generated SVGs |
+| `MONET_WEBHOOK_URL` | (none) | Webhook URL for push notifications |
+
+## Notifications
+
+Monet can send push notifications so you don't have to watch the screen while it plots. Set `MONET_WEBHOOK_URL` to a [ntfy.sh](https://ntfy.sh) topic URL and subscribe on your phone. You'll get pinged when a plot starts, finishes, errors, or when Claude needs you to swap a pen.
+
+Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server POSTs a JSON body with `event`, `timestamp`, and event-specific fields.
+
+## Notes on specific pen types
+
+**Posca paint markers**: Need to be pumped before use. A spring on the plotter arm helps with pressure. They can clog when plotting overlapping parallel or near-parallel lines. This is a feature, not a bug.
+
+**Brush pens**: Line weight varies with speed and pressure. The plotter produces consistent pressure, so variation comes from speed changes in the motion plan.
+
+**Fine liners**: Most predictable. Good for detailed base layers. 0.05mm tips can dry out during long plots.
+
 ## Project structure
 
 ```
 src/monet_mcp/
-    __init__.py
     server.py       # MCP server, tool definitions, config
     plotter.py      # AxiDraw control and state machine
     camera.py       # Webcam capture
@@ -121,40 +178,6 @@ tests/
     test_svg_utils.py
     test_plotter_state.py
 ```
-
-## Environment variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MONET_INVENTORY` | (none) | Path to pen inventory .xlsx or .csv |
-| `MONET_PAPER_INVENTORY` | (none) | Path to paper inventory .xlsx or .csv |
-| `MONET_CAMERA_TOP` | `0` | Video device index for overhead camera |
-| `MONET_CAMERA_ANGLE` | `-1` | Video device index for angle camera (-1 = disabled) |
-| `MONET_SVG_DIR` | `~/monet_svgs` | Directory to save generated SVGs |
-| `MONET_WEBHOOK_URL` | (none) | Webhook URL for push notifications (ntfy.sh supported natively) |
-
-## Notifications
-
-Monet sends push notifications on key events so you don't have to watch the screen. Set `MONET_WEBHOOK_URL` to a [ntfy.sh](https://ntfy.sh) topic URL and subscribe on your phone:
-
-```
-MONET_WEBHOOK_URL=https://ntfy.sh/monet-mcp
-```
-
-You'll get notified when:
-- A plot starts and finishes (or errors)
-- A pen change is needed (high priority, so your phone will ping)
-- Claude sends you a message via `monet_notify`
-
-Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server POSTs a JSON body with `event`, `timestamp`, and event-specific fields.
-
-## Notes on specific pen types
-
-**Posca paint markers**: Need to be pumped before use. A spring on the plotter arm helps with pressure. They can clog when plotting overlapping parallel or near-parallel lines. This is a feature, not a bug.
-
-**Brush pens**: Line weight varies with speed and pressure. The plotter produces consistent pressure, so variation comes from speed changes in the motion plan.
-
-**Fine liners**: Most predictable. Good for detailed base layers. 0.05mm tips can dry out during long plots.
 
 ## License
 

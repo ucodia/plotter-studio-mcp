@@ -22,7 +22,10 @@ def _load_spreadsheet(file_path: str) -> List[Dict[str, str]]:
             return []
         headers = [str(h).strip().lower() for h in rows[0]]
         return [
-            {headers[i]: str(cell) if cell is not None else "" for i, cell in enumerate(row)}
+            {
+                headers[i]: str(cell) if cell is not None else ""
+                for i, cell in enumerate(row)
+            }
             for row in rows[1:]
         ]
 
