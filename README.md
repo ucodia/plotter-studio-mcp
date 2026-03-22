@@ -36,14 +36,16 @@ This creates a virtual environment and installs all dependencies (MCP SDK, pyaxi
 
 ### 2. Set up your inventories
 
-Copy the templates from `examples/` somewhere convenient and fill them with your actual gear:
+The `examples/` folder contains CSV templates for your pens and papers. You can either edit them in place or copy them elsewhere. The paths you choose here are what you'll put in the Claude Desktop config in step 4.
+
+For example, to keep them inside the repo:
 
 ```bash
-cp examples/pen_inventory_template.csv ~/monet_pen_inventory.csv
-cp examples/paper_inventory_template.csv ~/monet_paper_inventory.csv
+cp examples/pen_inventory_template.csv pen_inventory.csv
+cp examples/paper_inventory_template.csv paper_inventory.csv
 ```
 
-Edit the CSVs with your pens and papers. The pen inventory columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. The paper inventory columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `orientation`, `notes`.
+Then edit the CSVs with your actual gear. The pen inventory columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. The paper inventory columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `notes`.
 
 ### 3. Find your camera indices
 
@@ -69,7 +71,7 @@ Open your Claude Desktop config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add the `monet` server. Replace `/absolute/path/to/monet-mcp` with the actual path where you cloned the repo, and update the other paths to match your setup:
+Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path where you cloned the repo. If you kept the inventory CSVs inside the repo as shown in step 2, the inventory paths will be relative to the repo root:
 
 ```json
 {
@@ -77,15 +79,15 @@ Add the `monet` server. Replace `/absolute/path/to/monet-mcp` with the actual pa
         "monet": {
             "command": "uv",
             "args": [
-                "--directory", "/absolute/path/to/monet-mcp",
+                "--directory", "/path/to/monet-mcp",
                 "run", "monet"
             ],
             "env": {
-                "MONET_INVENTORY": "/absolute/path/to/monet_pen_inventory.csv",
-                "MONET_PAPER_INVENTORY": "/absolute/path/to/monet_paper_inventory.csv",
+                "MONET_INVENTORY": "/path/to/monet-mcp/pen_inventory.csv",
+                "MONET_PAPER_INVENTORY": "/path/to/monet-mcp/paper_inventory.csv",
                 "MONET_CAMERA_TOP": "0",
                 "MONET_CAMERA_ANGLE": "1",
-                "MONET_SVG_DIR": "/absolute/path/to/svg/output",
+                "MONET_SVG_DIR": "/path/to/monet-mcp/svgs",
                 "MONET_WEBHOOK_URL": "https://ntfy.sh/your-topic-name"
             }
         }

@@ -515,7 +515,7 @@ async def monet_get_paper_inventory() -> str:
         return json.dumps(
             {
                 "error": "No paper inventory file configured. Set MONET_PAPER_INVENTORY env var.",
-                "hint": "Point it to an .xlsx or .csv file with columns like: name, brand, type, width_inches, height_inches, orientation, notes",
+                "hint": "Point it to an .xlsx or .csv file with columns like: name, brand, type, width_inches, height_inches, notes",
             }
         )
 
