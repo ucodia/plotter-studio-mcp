@@ -10,5 +10,4 @@ build/
 .mypy_cache/
 .pytest_cache/
 .claude/
-pen_inventory.csv
-paper_inventory.csv
+inventory/

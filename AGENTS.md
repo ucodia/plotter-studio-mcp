@@ -40,8 +40,8 @@ tests/
     test_plotter_state.py   # PlotterState state machine transitions (8 tests)
     test_svg_utils.py       # Paper dimensions and SVG wrapping (5 tests)
 examples/
-    pen_inventory_template.csv
-    paper_inventory_template.csv
+    pen.csv
+    paper.csv
 ```
 
 ## Testing

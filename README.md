@@ -36,16 +36,17 @@ This creates a virtual environment and installs all dependencies (MCP SDK, pyaxi
 
 ### 2. Set up your inventories
 
-The `examples/` folder contains CSV templates for your pens and papers. You can either edit them in place or copy them elsewhere. The paths you choose here are what you'll put in the Claude Desktop config in step 4.
-
-For example, to keep them inside the repo:
+Create a directory for your inventory files and copy the templates from `examples/`:
 
 ```bash
-cp examples/pen_inventory_template.csv pen_inventory.csv
-cp examples/paper_inventory_template.csv paper_inventory.csv
+mkdir inventory
+cp examples/pen.csv inventory/pen.csv
+cp examples/paper.csv inventory/paper.csv
 ```
 
-Then edit the CSVs with your actual gear. The pen inventory columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. The paper inventory columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `notes`.
+Edit both CSVs with your actual gear. `pen.csv` columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. `paper.csv` columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `notes`.
+
+In step 4 you'll point `MONET_INVENTORY_DIR` at this directory and Monet will look for `pen.csv` and `paper.csv` inside it.
 
 ### 3. Find your camera indices
 
@@ -71,7 +72,7 @@ Open your Claude Desktop config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path where you cloned the repo. If you kept the inventory CSVs inside the repo as shown in step 2, the inventory paths will be relative to the repo root:
+Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path where you cloned the repo:
 
 ```json
 {
@@ -83,8 +84,7 @@ Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path wher
                 "run", "monet"
             ],
             "env": {
-                "MONET_INVENTORY": "/path/to/monet-mcp/pen_inventory.csv",
-                "MONET_PAPER_INVENTORY": "/path/to/monet-mcp/paper_inventory.csv",
+                "MONET_INVENTORY_DIR": "/path/to/monet-mcp/inventory",
                 "MONET_CAMERA_TOP": "0",
                 "MONET_CAMERA_ANGLE": "1",
                 "MONET_SVG_DIR": "/path/to/monet-mcp/svgs",
@@ -95,7 +95,7 @@ Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path wher
 }
 ```
 
-`MONET_CAMERA_ANGLE`, `MONET_SVG_DIR`, `MONET_PAPER_INVENTORY`, and `MONET_WEBHOOK_URL` are all optional. See the environment variables table below for defaults.
+`MONET_CAMERA_ANGLE`, `MONET_SVG_DIR`, and `MONET_WEBHOOK_URL` are all optional. See the environment variables table below for defaults.
 
 ### 5. Restart Claude Desktop
 
@@ -123,8 +123,8 @@ If both respond without errors, you're ready to make art.
 | `monet_request_pen_change` | Ask human to swap the pen |
 | `monet_confirm_pen_change` | Human confirms pen is swapped |
 | `monet_capture` | Grab a frame from top/angle/both cameras |
-| `monet_get_pen_inventory` | List available pens from spreadsheet |
-| `monet_get_paper_inventory` | List available papers from spreadsheet |
+| `monet_get_pen_inventory` | List available pens from inventory |
+| `monet_get_paper_inventory` | List available papers from inventory |
 | `monet_get_paper_info` | Get paper dimensions and coordinate system |
 | `monet_move_to` | Move pen to a position (pen up) |
 | `monet_pen_up` | Raise the pen |
@@ -142,8 +142,7 @@ If both respond without errors, you're ready to make art.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MONET_INVENTORY` | (none) | Path to pen inventory .xlsx or .csv |
-| `MONET_PAPER_INVENTORY` | (none) | Path to paper inventory .xlsx or .csv |
+| `MONET_INVENTORY_DIR` | (none) | Directory containing `pen.csv` and `paper.csv` |
 | `MONET_CAMERA_TOP` | `0` | Video device index for overhead camera |
 | `MONET_CAMERA_ANGLE` | `-1` | Video device index for angle camera (-1 disables it) |
 | `MONET_SVG_DIR` | `~/monet_svgs` | Directory to save generated SVGs |
@@ -170,12 +169,12 @@ src/monet_mcp/
     server.py       # MCP server, tool definitions, config
     plotter.py      # AxiDraw control and state machine
     camera.py       # Webcam capture
-    inventory.py    # Pen and paper inventory loading
+    inventory.py    # Inventory loading
     webhook.py      # Push notifications
     svg_utils.py    # SVG wrapping, paper constants
 examples/
-    pen_inventory_template.csv
-    paper_inventory_template.csv
+    pen.csv
+    paper.csv
 tests/
     test_svg_utils.py
     test_plotter_state.py

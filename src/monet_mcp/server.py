@@ -24,7 +24,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from .camera import _capture_frame
-from .inventory import _load_inventory, _load_paper_inventory
+from .inventory import _load_spreadsheet
 from .plotter import PlotterState, _plot_svg_blocking
 from .svg_utils import (
     DPI,
@@ -41,8 +41,7 @@ from .webhook import _send_webhook, configure_webhook
 # ---------------------------------------------------------------------------
 
 SVG_DIR = Path(os.environ.get("MONET_SVG_DIR", os.path.expanduser("~/monet_svgs")))
-INVENTORY_PATH = os.environ.get("MONET_INVENTORY", "")
-PAPER_INVENTORY_PATH = os.environ.get("MONET_PAPER_INVENTORY", "")
+INVENTORY_DIR = os.environ.get("MONET_INVENTORY_DIR", "")
 CAMERA_TOP_INDEX = int(os.environ.get("MONET_CAMERA_TOP", "0"))
 CAMERA_ANGLE_INDEX = int(os.environ.get("MONET_CAMERA_ANGLE", "-1"))  # -1 = disabled
 WEBHOOK_URL = os.environ.get("MONET_WEBHOOK_URL", "")  # POST JSON notifications here
@@ -471,25 +470,24 @@ async def monet_capture(params: CaptureInput) -> list:
     },
 )
 async def monet_get_pen_inventory() -> str:
-    """Load and return the pen inventory from the configured spreadsheet.
+    """Load and return the pen inventory from the configured directory.
     Returns all available pens with their type, size, color, and other attributes.
 
     Returns:
         str: JSON array of pen entries, or an error if no inventory is configured.
     """
-    if not INVENTORY_PATH:
+    if not INVENTORY_DIR:
         return json.dumps(
             {
-                "error": "No inventory file configured. Set MONET_INVENTORY env var.",
-                "hint": "Point it to an .xlsx or .csv file with columns like: name, type, tip_size, color",
+                "error": "No inventory directory configured. Set MONET_INVENTORY_DIR env var.",
+                "hint": "Point it to a directory containing pen.csv",
             }
         )
 
-    inventory = await asyncio.to_thread(_load_inventory, INVENTORY_PATH)
+    pen_path = os.path.join(INVENTORY_DIR, "pen.csv")
+    inventory = await asyncio.to_thread(_load_spreadsheet, pen_path)
     if not inventory:
-        return json.dumps(
-            {"error": f"Inventory file is empty or not found: {INVENTORY_PATH}"}
-        )
+        return json.dumps({"error": f"Pen inventory is empty or not found: {pen_path}"})
 
     return json.dumps({"count": len(inventory), "pens": inventory})
 
@@ -505,26 +503,25 @@ async def monet_get_pen_inventory() -> str:
     },
 )
 async def monet_get_paper_inventory() -> str:
-    """Load and return the paper inventory from the configured spreadsheet.
+    """Load and return the paper inventory from the configured directory.
     Returns all available papers with their brand, type, dimensions, and notes.
 
     Returns:
         str: JSON array of paper entries, or an error if no inventory is configured.
     """
-    if not PAPER_INVENTORY_PATH:
+    if not INVENTORY_DIR:
         return json.dumps(
             {
-                "error": "No paper inventory file configured. Set MONET_PAPER_INVENTORY env var.",
-                "hint": "Point it to an .xlsx or .csv file with columns like: name, brand, type, width_inches, height_inches, notes",
+                "error": "No inventory directory configured. Set MONET_INVENTORY_DIR env var.",
+                "hint": "Point it to a directory containing paper.csv",
             }
         )
 
-    papers = await asyncio.to_thread(_load_paper_inventory, PAPER_INVENTORY_PATH)
+    paper_path = os.path.join(INVENTORY_DIR, "paper.csv")
+    papers = await asyncio.to_thread(_load_spreadsheet, paper_path)
     if not papers:
         return json.dumps(
-            {
-                "error": f"Paper inventory file is empty or not found: {PAPER_INVENTORY_PATH}"
-            }
+            {"error": f"Paper inventory is empty or not found: {paper_path}"}
         )
 
     return json.dumps({"count": len(papers), "papers": papers})

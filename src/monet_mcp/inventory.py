@@ -1,4 +1,4 @@
-"""Pen and paper inventory loading from xlsx or csv files."""
+"""Inventory loading from csv or xlsx files."""
 
 import os
 from pathlib import Path
@@ -6,7 +6,7 @@ from typing import Dict, List
 
 
 def _load_spreadsheet(file_path: str) -> List[Dict[str, str]]:
-    """Load rows from an xlsx or csv file as a list of dicts."""
+    """Load rows from a csv or xlsx file as a list of dicts."""
     if not file_path or not os.path.exists(file_path):
         return []
 
@@ -39,13 +39,3 @@ def _load_spreadsheet(file_path: str) -> List[Dict[str, str]]:
             ]
 
     return []
-
-
-def _load_inventory(inventory_path: str) -> List[Dict[str, str]]:
-    """Load pen inventory from an xlsx or csv file."""
-    return _load_spreadsheet(inventory_path)
-
-
-def _load_paper_inventory(paper_path: str) -> List[Dict[str, str]]:
-    """Load paper inventory from an xlsx or csv file."""
-    return _load_spreadsheet(paper_path)
