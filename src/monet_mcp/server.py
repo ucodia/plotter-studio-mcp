@@ -40,11 +40,16 @@ from .webhook import _send_webhook, configure_webhook
 # Configuration
 # ---------------------------------------------------------------------------
 
-SVG_DIR = Path(os.environ.get("MONET_SVG_DIR", os.path.expanduser("~/monet_svgs")))
-INVENTORY_DIR = os.environ.get("MONET_INVENTORY_DIR", "")
-CAMERA_TOP_INDEX = int(os.environ.get("MONET_CAMERA_TOP", "0"))
-CAMERA_ANGLE_INDEX = int(os.environ.get("MONET_CAMERA_ANGLE", "-1"))  # -1 = disabled
-WEBHOOK_URL = os.environ.get("MONET_WEBHOOK_URL", "")  # POST JSON notifications here
+WORK_DIR = os.environ.get("MONET_WORK_DIR", "")
+SVG_DIR = Path(os.path.join(WORK_DIR, "output")) if WORK_DIR else Path(os.path.expanduser("~/monet_svgs"))
+WEBHOOK_URL = os.environ.get("MONET_WEBHOOK_URL", "")
+
+# Parse MONET_CAMERAS: comma-separated list of video device indices.
+# First entry is the top (overhead) camera, second is the angle camera.
+_cameras_raw = os.environ.get("MONET_CAMERAS", "0")
+_camera_indices = [int(x.strip()) for x in _cameras_raw.split(",") if x.strip()]
+CAMERA_TOP_INDEX = _camera_indices[0] if len(_camera_indices) >= 1 else 0
+CAMERA_ANGLE_INDEX = _camera_indices[1] if len(_camera_indices) >= 2 else -1
 
 # Logging to stderr (required for stdio MCP servers)
 logging.basicConfig(
@@ -476,15 +481,15 @@ async def monet_get_pen_inventory() -> str:
     Returns:
         str: JSON array of pen entries, or an error if no inventory is configured.
     """
-    if not INVENTORY_DIR:
+    if not WORK_DIR:
         return json.dumps(
             {
-                "error": "No inventory directory configured. Set MONET_INVENTORY_DIR env var.",
+                "error": "No work directory configured. Set MONET_WORK_DIR env var.",
                 "hint": "Point it to a directory containing pen.csv",
             }
         )
 
-    pen_path = os.path.join(INVENTORY_DIR, "pen.csv")
+    pen_path = os.path.join(WORK_DIR, "pen.csv")
     inventory = await asyncio.to_thread(_load_spreadsheet, pen_path)
     if not inventory:
         return json.dumps({"error": f"Pen inventory is empty or not found: {pen_path}"})
@@ -509,15 +514,15 @@ async def monet_get_paper_inventory() -> str:
     Returns:
         str: JSON array of paper entries, or an error if no inventory is configured.
     """
-    if not INVENTORY_DIR:
+    if not WORK_DIR:
         return json.dumps(
             {
-                "error": "No inventory directory configured. Set MONET_INVENTORY_DIR env var.",
+                "error": "No work directory configured. Set MONET_WORK_DIR env var.",
                 "hint": "Point it to a directory containing paper.csv",
             }
         )
 
-    paper_path = os.path.join(INVENTORY_DIR, "paper.csv")
+    paper_path = os.path.join(WORK_DIR, "paper.csv")
     papers = await asyncio.to_thread(_load_spreadsheet, paper_path)
     if not papers:
         return json.dumps(

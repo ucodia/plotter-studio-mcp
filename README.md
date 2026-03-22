@@ -34,19 +34,17 @@ uv sync
 
 This creates a virtual environment and installs all dependencies (MCP SDK, pyaxidraw, OpenCV, etc.).
 
-### 2. Set up your inventories
+### 2. Create your work directory
 
-Create a directory for your inventory files and copy the templates from `examples/`:
+Monet uses a single work directory for everything: pen inventory, paper inventory, and SVG output. Create one and seed it from the examples:
 
 ```bash
-mkdir inventory
-cp examples/pen.csv inventory/pen.csv
-cp examples/paper.csv inventory/paper.csv
+mkdir -p ~/monet
+cp examples/pen.csv ~/monet/pen.csv
+cp examples/paper.csv ~/monet/paper.csv
 ```
 
-Edit both CSVs with your actual gear. `pen.csv` columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. `paper.csv` columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `notes`.
-
-In step 4 you'll point `MONET_INVENTORY_DIR` at this directory and Monet will look for `pen.csv` and `paper.csv` inside it.
+Edit both CSVs with your actual gear. `pen.csv` columns are `name`, `type`, `tip_size_mm`, `color`, `notes`. `paper.csv` columns are `name`, `brand`, `type`, `width_inches`, `height_inches`, `notes`. Monet will create an `output/` subdirectory inside your work directory for SVG files automatically.
 
 ### 3. Find your camera indices
 
@@ -72,7 +70,7 @@ Open your Claude Desktop config file:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path where you cloned the repo:
+Add the `monet` server. Replace the paths with your actual values:
 
 ```json
 {
@@ -84,10 +82,8 @@ Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path wher
                 "run", "monet"
             ],
             "env": {
-                "MONET_INVENTORY_DIR": "/path/to/monet-mcp/inventory",
-                "MONET_CAMERA_TOP": "0",
-                "MONET_CAMERA_ANGLE": "1",
-                "MONET_SVG_DIR": "/path/to/monet-mcp/svgs",
+                "MONET_WORK_DIR": "/Users/you/monet",
+                "MONET_CAMERAS": "0,1",
                 "MONET_WEBHOOK_URL": "https://ntfy.sh/your-topic-name"
             }
         }
@@ -95,7 +91,7 @@ Add the `monet` server. Replace `/path/to/monet-mcp` with the absolute path wher
 }
 ```
 
-`MONET_CAMERA_ANGLE`, `MONET_SVG_DIR`, and `MONET_WEBHOOK_URL` are all optional. See the environment variables table below for defaults.
+`MONET_CAMERAS` is a comma-separated list of video device indices. The first is the overhead camera, the second (optional) is the angle camera. If you only have one camera, just pass `"0"`. `MONET_WEBHOOK_URL` is optional. See the environment variables table below for details.
 
 ### 5. Restart Claude Desktop
 
@@ -142,10 +138,8 @@ If both respond without errors, you're ready to make art.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MONET_INVENTORY_DIR` | (none) | Directory containing `pen.csv` and `paper.csv` |
-| `MONET_CAMERA_TOP` | `0` | Video device index for overhead camera |
-| `MONET_CAMERA_ANGLE` | `-1` | Video device index for angle camera (-1 disables it) |
-| `MONET_SVG_DIR` | `~/monet_svgs` | Directory to save generated SVGs |
+| `MONET_WORK_DIR` | (none) | Directory containing `pen.csv`, `paper.csv`, and `output/` for SVGs |
+| `MONET_CAMERAS` | `0` | Comma-separated video device indices (first = top, second = angle) |
 | `MONET_WEBHOOK_URL` | (none) | Webhook URL for push notifications |
 
 ## Notifications

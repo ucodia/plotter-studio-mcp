@@ -10,4 +10,4 @@ build/
 .mypy_cache/
 .pytest_cache/
 .claude/
-inventory/
+output/
