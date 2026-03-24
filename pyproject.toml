@@ -1,15 +1,14 @@
 [project]
-name = "monet-mcp"
-version = "0.1.0"
-description = "An MCP server that gives Claude eyes and a robotic arm via an AxiDraw pen plotter"
+name = "plotter-studio-mcp"
+version = "0.2.0"
+description = "An MCP server for pen plotter art creation"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.13"
 dependencies = [
     "mcp[cli]",
-    "axicli @ https://cdn.evilmadscientist.com/dl/ad/public/AxiDraw_API.zip",
+    "nextdraw-api @ https://software-download.bantamtools.com/nd/api/nextdraw_api.zip",
     "opencv-python",
-    "openpyxl",
     "Pillow",
 ]
 
@@ -20,7 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-monet = "monet_mcp.server:main"
+plotter-studio = "plotter_studio.server:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -33,4 +32,4 @@ addopts = "--import-mode=importlib"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/monet_mcp"]
+packages = ["src/plotter_studio"]

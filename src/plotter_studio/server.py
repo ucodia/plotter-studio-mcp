@@ -1,12 +1,11 @@
 """
-Monet MCP Server
-================
-An MCP server that gives Claude eyes and a robotic arm via an AxiDraw pen plotter
-and webcams. Named after Claude Monet, naturally.
+Plotter Studio MCP Server
+=========================
+An MCP server that gives AI agents eyes and a robotic arm via a pen plotter
+and webcam.
 
 Usage:
-    monet            # if installed via pip install -e .
-    python -m monet_mcp.server
+    plotter-studio   # if installed via pip install -e .
 """
 
 import asyncio
@@ -20,11 +19,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Image
 from pydantic import BaseModel, ConfigDict, Field
 
-from .camera import _capture_frame
-from .inventory import _load_spreadsheet
+from .camera import capture_frame
 from .plotter import PlotterState, _plot_svg_blocking
 from .svg_utils import (
     DPI,
@@ -40,55 +38,47 @@ from .webhook import _send_webhook, configure_webhook
 # Configuration
 # ---------------------------------------------------------------------------
 
-WORK_DIR = os.environ.get("MONET_WORK_DIR", "")
-SVG_DIR = Path(os.path.join(WORK_DIR, "output")) if WORK_DIR else Path(os.path.expanduser("~/monet_svgs"))
-WEBHOOK_URL = os.environ.get("MONET_WEBHOOK_URL", "")
+SVG_DIR = Path(os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("~/plotter-studio/output")))
+WEBHOOK_URL = os.environ.get("PLOTTER_WEBHOOK_URL", "")
+PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
+PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
+CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
 
-# Parse MONET_CAMERAS: comma-separated list of video device indices.
-# First entry is the top (overhead) camera, second is the angle camera.
-_cameras_raw = os.environ.get("MONET_CAMERAS", "0")
-_camera_indices = [int(x.strip()) for x in _cameras_raw.split(",") if x.strip()]
-CAMERA_TOP_INDEX = _camera_indices[0] if len(_camera_indices) >= 1 else 0
-CAMERA_ANGLE_INDEX = _camera_indices[1] if len(_camera_indices) >= 2 else -1
-
-# Logging to stderr (required for stdio MCP servers)
 logging.basicConfig(
     level=logging.INFO,
-    format="[monet] %(asctime)s %(levelname)s: %(message)s",
+    format="[plotter-studio] %(asctime)s %(levelname)s: %(message)s",
     stream=sys.stderr,
 )
-logger = logging.getLogger("monet")
+logger = logging.getLogger("plotter-studio")
 
-# Configure webhook URL
 configure_webhook(WEBHOOK_URL)
 
-# Shared plotter state
 plotter_state = PlotterState()
 
 # ---------------------------------------------------------------------------
-# Lifespan: ensure SVG directory exists
+# Lifespan
 # ---------------------------------------------------------------------------
 
 
 @asynccontextmanager
-async def app_lifespan():
+async def app_lifespan(server: FastMCP):
     SVG_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Monet MCP started. SVG dir: {SVG_DIR}")
+    logger.info(f"Plotter Studio MCP started. SVG dir: {SVG_DIR}")
     yield {}
-    logger.info("Monet MCP shutting down.")
+    logger.info("Plotter Studio MCP shutting down.")
 
 
 # ---------------------------------------------------------------------------
 # MCP Server
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP("monet_mcp", lifespan=app_lifespan)
+mcp = FastMCP("plotter-studio", lifespan=app_lifespan)
 
 # ---- Plotting tools -------------------------------------------------------
 
 
 class PlotSvgInput(BaseModel):
-    """Input for plotting an SVG on the AxiDraw."""
+    """Input for plotting an SVG."""
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -97,7 +87,7 @@ class PlotSvgInput(BaseModel):
         description=(
             "Complete SVG content to plot. Can be a full SVG document or just "
             "the inner elements (paths, circles, lines, etc.) which will be "
-            "wrapped in a document sized to the paper (11x15in at 96 DPI). "
+            "wrapped in a document sized to the paper. "
             "All coordinates should be in pixels at 96 DPI."
         ),
     )
@@ -118,13 +108,13 @@ class PlotSvgInput(BaseModel):
         le=100,
     )
     pen_pos_down: Optional[int] = Field(
-        default=40,
+        default=0,
         description="Pen-down height as percentage (0=lowest). Adjust for pen/marker type.",
         ge=0,
         le=100,
     )
     pen_pos_up: Optional[int] = Field(
-        default=60,
+        default=50,
         description="Pen-up height as percentage (100=highest).",
         ge=0,
         le=100,
@@ -140,7 +130,7 @@ class PlotSvgInput(BaseModel):
 @mcp.tool(
     name="monet_plot_svg",
     annotations={
-        "title": "Plot SVG on AxiDraw",
+        "title": "Plot SVG on plotter",
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": False,
@@ -168,22 +158,19 @@ async def monet_plot_svg(params: PlotSvgInput) -> str:
     if plotter_state.status == PlotterState.WAITING_PEN_CHANGE:
         return json.dumps({"error": "Waiting for pen change. Confirm before plotting."})
 
-    # Determine if content needs wrapping
     svg = params.svg_content.strip()
     if not svg.startswith("<?xml") and not svg.startswith("<svg"):
         svg = wrap_svg(svg)
 
-    # Save SVG to file
     filename = (
-        params.filename or f"monet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
+        params.filename or f"plot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
     )
     if not filename.endswith(".svg"):
         filename += ".svg"
     svg_path = SVG_DIR / filename
     svg_path.write_text(svg, encoding="utf-8")
 
-    # Build options dict
-    options = {}
+    options = {"model": PLOTTER_MODEL, "penlift": PLOTTER_PENLIFT}
     if params.speed_pendown is not None:
         options["speed_pendown"] = params.speed_pendown
     if params.speed_penup is not None:
@@ -195,7 +182,6 @@ async def monet_plot_svg(params: PlotSvgInput) -> str:
     if params.accel is not None:
         options["accel"] = params.accel
 
-    # Start plotting in background thread
     plotter_state.start_plot(filename)
     _send_webhook("plot_started", {"filename": filename, "svg_path": str(svg_path)})
     thread = threading.Thread(
@@ -288,6 +274,36 @@ async def monet_get_status() -> str:
     return json.dumps(plotter_state.get_info())
 
 
+@mcp.tool(
+    name="monet_stop_plot",
+    annotations={
+        "title": "Stop the current plot",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def monet_stop_plot() -> str:
+    """Cancel the currently running plot. The plotter will finish its current
+    movement segment and then stop gracefully with pen raised.
+
+    Returns:
+        str: JSON with cancellation result.
+    """
+    if plotter_state.status != PlotterState.PLOTTING:
+        return json.dumps(
+            {"error": f"No plot running. Plotter is {plotter_state.status}."}
+        )
+
+    success = plotter_state.cancel_plot()
+    if success:
+        logger.info("Plot cancellation requested.")
+        return json.dumps({"status": "cancelling", "message": "Plot stop requested. The plotter will finish its current segment and stop."})
+    else:
+        return json.dumps({"error": "Could not cancel plot. No active plotter reference."})
+
+
 # ---- Pen management tools --------------------------------------------------
 
 
@@ -298,11 +314,7 @@ class PenChangeInput(BaseModel):
 
     pen_description: str = Field(
         ...,
-        description=(
-            "Description of the pen to load, e.g. "
-            "'Sakura Micron 0.05mm black' or 'Posca 0.7mm white'. "
-            "Should match an entry from the pen inventory."
-        ),
+        description="Description of the pen to load, e.g. 'Sakura Micron 0.05mm black'.",
         min_length=1,
     )
     notes: Optional[str] = Field(
@@ -395,17 +407,6 @@ async def monet_confirm_pen_change() -> str:
 # ---- Camera tools ----------------------------------------------------------
 
 
-class CaptureInput(BaseModel):
-    """Input for camera capture."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    camera: str = Field(
-        default="top",
-        description="Which camera to use: 'top' for overhead view, 'angle' for perspective view, 'both' for both.",
-    )
-
-
 @mcp.tool(
     name="monet_capture",
     annotations={
@@ -416,120 +417,17 @@ class CaptureInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def monet_capture(params: CaptureInput) -> list:
-    """Capture a photo from one or both webcams to see the current state of the paper.
-    Returns base64-encoded JPEG image(s) that Claude can view directly.
-
-    Args:
-        params (CaptureInput): Which camera(s) to capture from.
+async def monet_capture() -> Image:
+    """Capture a photo from the webcam to see the current state of the paper.
+    Returns a full-resolution JPEG image inline.
 
     Returns:
-        list: MCP content blocks with embedded images.
+        Image: JPEG image content block.
     """
-    results = []
-    cameras_to_capture = []
-
-    if params.camera in ("top", "both"):
-        cameras_to_capture.append(("top", CAMERA_TOP_INDEX))
-    if params.camera in ("angle", "both") and CAMERA_ANGLE_INDEX >= 0:
-        cameras_to_capture.append(("angle", CAMERA_ANGLE_INDEX))
-
-    if not cameras_to_capture:
-        return [
-            {"type": "text", "text": "No cameras available for the requested view."}
-        ]
-
-    for name, idx in cameras_to_capture:
-        frame_b64 = await asyncio.to_thread(_capture_frame, idx)
-        if frame_b64:
-            results.append({"type": "text", "text": f"--- {name} camera ---"})
-            results.append(
-                {
-                    "type": "image",
-                    "data": frame_b64,
-                    "mimeType": "image/jpeg",
-                }
-            )
-        else:
-            results.append(
-                {
-                    "type": "text",
-                    "text": f"Failed to capture from {name} camera (index {idx}).",
-                }
-            )
-
-    return results
-
-
-# ---- Inventory tools -------------------------------------------------------
-
-
-@mcp.tool(
-    name="monet_get_pen_inventory",
-    annotations={
-        "title": "Get pen inventory",
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-)
-async def monet_get_pen_inventory() -> str:
-    """Load and return the pen inventory from the configured directory.
-    Returns all available pens with their type, size, color, and other attributes.
-
-    Returns:
-        str: JSON array of pen entries, or an error if no inventory is configured.
-    """
-    if not WORK_DIR:
-        return json.dumps(
-            {
-                "error": "No work directory configured. Set MONET_WORK_DIR env var.",
-                "hint": "Point it to a directory containing pen.csv",
-            }
-        )
-
-    pen_path = os.path.join(WORK_DIR, "pen.csv")
-    inventory = await asyncio.to_thread(_load_spreadsheet, pen_path)
-    if not inventory:
-        return json.dumps({"error": f"Pen inventory is empty or not found: {pen_path}"})
-
-    return json.dumps({"count": len(inventory), "pens": inventory})
-
-
-@mcp.tool(
-    name="monet_get_paper_inventory",
-    annotations={
-        "title": "Get paper inventory",
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-)
-async def monet_get_paper_inventory() -> str:
-    """Load and return the paper inventory from the configured directory.
-    Returns all available papers with their brand, type, dimensions, and notes.
-
-    Returns:
-        str: JSON array of paper entries, or an error if no inventory is configured.
-    """
-    if not WORK_DIR:
-        return json.dumps(
-            {
-                "error": "No work directory configured. Set MONET_WORK_DIR env var.",
-                "hint": "Point it to a directory containing paper.csv",
-            }
-        )
-
-    paper_path = os.path.join(WORK_DIR, "paper.csv")
-    papers = await asyncio.to_thread(_load_spreadsheet, paper_path)
-    if not papers:
-        return json.dumps(
-            {"error": f"Paper inventory is empty or not found: {paper_path}"}
-        )
-
-    return json.dumps({"count": len(papers), "papers": papers})
+    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX)
+    if jpeg_bytes:
+        return Image(data=jpeg_bytes, format="jpeg")
+    raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
 
 
 # ---- Paper info tool -------------------------------------------------------
@@ -614,13 +512,14 @@ async def monet_move_to(params: ManualMoveInput) -> str:
 
     def _do_move():
         try:
-            from pyaxidraw import axidraw
+            from nextdraw import NextDraw
 
-            ad = axidraw.AxiDraw()
+            ad = NextDraw()
             ad.interactive()
-            ad.options.model = 2
+            ad.options.model = PLOTTER_MODEL
+            ad.options.penlift = PLOTTER_PENLIFT
             if not ad.connect():
-                return {"error": "Could not connect to AxiDraw."}
+                return {"error": "Could not connect to plotter."}
             ad.moveto(params.x_inches, params.y_inches)
             ad.disconnect()
             return {"status": "moved", "x": params.x_inches, "y": params.y_inches}
@@ -652,13 +551,14 @@ async def monet_pen_up() -> str:
 
     def _do_pen_up():
         try:
-            from pyaxidraw import axidraw
+            from nextdraw import NextDraw
 
-            ad = axidraw.AxiDraw()
+            ad = NextDraw()
             ad.interactive()
-            ad.options.model = 2
+            ad.options.model = PLOTTER_MODEL
+            ad.options.penlift = PLOTTER_PENLIFT
             if not ad.connect():
-                return {"error": "Could not connect to AxiDraw."}
+                return {"error": "Could not connect to plotter."}
             ad.penup()
             ad.disconnect()
             return {"status": "pen_up"}
@@ -690,13 +590,14 @@ async def monet_home() -> str:
 
     def _do_home():
         try:
-            from pyaxidraw import axidraw
+            from nextdraw import NextDraw
 
-            ad = axidraw.AxiDraw()
+            ad = NextDraw()
             ad.interactive()
-            ad.options.model = 2
+            ad.options.model = PLOTTER_MODEL
+            ad.options.penlift = PLOTTER_PENLIFT
             if not ad.connect():
-                return {"error": "Could not connect to AxiDraw."}
+                return {"error": "Could not connect to plotter."}
             ad.moveto(0, 0)
             ad.disconnect()
             return {"status": "home", "x": 0, "y": 0}
@@ -757,8 +658,8 @@ async def monet_notify(params: NotifyInput) -> str:
 
 
 def main():
-    """Entry point for the monet console script."""
-    mcp.run()
+    """Entry point for the plotter-studio console script."""
+    mcp.run(transport="sse")
 
 
 if __name__ == "__main__":

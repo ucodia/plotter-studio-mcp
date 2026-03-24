@@ -1,6 +1,6 @@
 """Tests for SVG wrapping utilities."""
 
-from monet_mcp.svg_utils import (
+from plotter_studio.svg_utils import (
     DPI,
     PAPER_HEIGHT_INCHES,
     PAPER_HEIGHT_PX,

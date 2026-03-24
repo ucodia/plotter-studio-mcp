@@ -2,9 +2,9 @@
 
 ## Project overview
 
-Monet is an MCP server that gives AI agents the ability to create physical art using AxiDraw pen plotters. The agent composes SVG artwork, sends it to the plotter, observes results through webcams, and iterates. The human loads paper, swaps tools, and confirms physical actions.
+Plotter Studio is an MCP server that gives AI agents the ability to create physical art using AxiDraw pen plotters (with NextDraw firmware). The agent composes SVG artwork, sends it to the plotter via MCP tool calls, observes results through a webcam, and iterates. The human loads paper, swaps tools, and confirms physical actions.
 
-Built with FastMCP (Python MCP SDK), pyaxidraw, and OpenCV. Runs as a stdio server launched by Claude Desktop or any MCP client.
+Built with FastMCP (Python MCP SDK), nextdraw-api, and OpenCV. Runs as an SSE server on localhost.
 
 ## Commands
 
@@ -22,27 +22,54 @@ uv run pytest tests/test_plotter_state.py
 uv run ruff format .
 uv run ruff check .
 
-# Run the MCP server directly
-uv run monet
+# Run the MCP server (SSE transport)
+uv run plotter-studio --transport sse
+```
+
+## Claude Desktop configuration
+
+The MCP server runs over SSE on localhost. Claude Desktop connects through mcp-remote:
+
+```json
+{
+    "mcpServers": {
+        "Plotter Studio": {
+            "command": "npx",
+            "args": [
+                "mcp-remote@latest",
+                "http://127.0.0.1:8000/sse",
+                "--allow-http"
+            ]
+        }
+    }
+}
 ```
 
 ## Project structure
 
 ```
-src/monet_mcp/
-    server.py       # MCP server entry point, all 14 tool definitions, config loading
-    plotter.py      # PlotterState class — thread-safe state machine for plotter control
-    camera.py       # Webcam capture via OpenCV, returns base64 JPEG
-    inventory.py    # Loads pen/paper inventory from .csv or .xlsx
+src/plotter_studio/
+    server.py       # MCP server entry point, all tool definitions, config loading
+    plotter.py      # PlotterState class -- thread-safe state machine for plotter control
+    camera.py       # Webcam capture via OpenCV, returns JPEG bytes
     webhook.py      # Push notifications via ntfy.sh or generic JSON webhooks
     svg_utils.py    # Paper dimension constants (96 DPI), SVG document wrapping
 tests/
     test_plotter_state.py   # PlotterState state machine transitions (8 tests)
     test_svg_utils.py       # Paper dimensions and SVG wrapping (5 tests)
-examples/
-    pen.csv
-    paper.csv
 ```
+
+## Environment variables
+
+All configuration is via environment variables with `PLOTTER_` prefix:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PLOTTER_SVG_DIR` | `~/plotter-studio/output` | Directory where SVG files are saved |
+| `PLOTTER_WEBHOOK_URL` | (empty) | Webhook URL for notifications (supports ntfy.sh) |
+| `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
+| `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
+| `PLOTTER_CAMERA` | `0` | Webcam device index |
 
 ## Testing
 
@@ -55,38 +82,59 @@ examples/
 - Python 3.13+, formatted with ruff
 - Type hints on function signatures
 - No docstrings or comments unless the logic is genuinely non-obvious
-- All configuration via environment variables (see `server.py` for `MONET_*` vars)
+- All configuration via environment variables (see table above)
 
 ## Architecture
 
-- **server.py** is the main file — it defines all MCP tools via `@mcp.tool()` decorators and loads config from env vars at startup
-- **PlotterState** in `plotter.py` is a thread-safe state machine (IDLE → PLOTTING → IDLE, with WAITING_PEN_CHANGE and ERROR states). Plotting runs in a background thread via `asyncio.to_thread`
-- **One SVG per pass**: each plot call takes a single SVG with one tool/color. Multi-layer artwork is built up across multiple passes
-- **Pen change handshake**: two-step process — agent calls `request_pen_change`, human physically swaps the pen, then agent calls `confirm_pen_change`
-- **Camera capture** returns base64-encoded JPEG as MCP image content blocks
-- **Webhooks** are fire-and-forget via daemon threads
+- **server.py** is the main file. It defines all MCP tools via `@mcp.tool()` decorators and loads config from env vars at startup. Transport is SSE.
+- **PlotterState** in `plotter.py` is a thread-safe state machine (IDLE -> PLOTTING -> IDLE, with WAITING_PEN_CHANGE and ERROR states). Plotting runs in a background thread via `asyncio.to_thread`.
+- **One SVG per pass**: each plot call takes a single SVG string with one tool/color. Multi-layer artwork is built up across multiple passes.
+- **String-only SVG input**: the `monet_plot_svg` tool receives SVG content as a string parameter. No file paths. If the content is bare elements (not a full document), it gets auto-wrapped with proper paper dimensions.
+- **Capture returns inline images**: `monet_capture` returns a FastMCP `Image(data=bytes, format="jpeg")` content block. Full-resolution JPEG at 80% quality keeps 1080p under 500KB, safely within MCP's 1MB result limit.
+- **Pen change handshake**: two-step process. Agent calls `monet_request_pen_change`, human physically swaps the pen, then agent calls `monet_confirm_pen_change`.
+- **Webhooks** are fire-and-forget via daemon threads.
+- **No shared filesystem**: the server is designed to work entirely over the wire. The agent has no direct access to the server's filesystem.
+
+## MCP tools
+
+| Tool | Purpose |
+|---|---|
+| `monet_plot_svg` | Send SVG string to plotter (background, non-blocking) |
+| `monet_preview_svg` | Save SVG to disk without plotting |
+| `monet_get_status` | Check plotter state (idle/plotting/waiting/error) |
+| `monet_stop_plot` | Cancel the current plot gracefully |
+| `monet_request_pen_change` | Ask human to swap pen |
+| `monet_confirm_pen_change` | Confirm pen swap is done |
+| `monet_capture` | Take webcam photo, returns inline JPEG |
+| `monet_get_paper_info` | Get paper dimensions and coordinate info |
+| `monet_move_to` | Move pen to position (pen up) |
+| `monet_pen_up` | Raise the pen |
+| `monet_home` | Return pen carriage to home (0,0) |
+| `monet_notify` | Send notification to human via webhook |
 
 ## Key domain context
 
-- SVG coordinate system: 96 DPI. Default paper: 11 × 15 inches (1056 × 1440 px), portrait, origin at top-left
-- AxiDraw model: A3 (model = 2 in pyaxidraw config)
+- SVG coordinate system: 96 DPI. Default paper: 11 x 15 inches (1056 x 1440 px), portrait, origin at top-left
+- AxiDraw model: V3/A3 (model = 2) with NextDraw firmware
+- `penlift = 3` is required for brushless servo motor
+- Default pen positions: `pen_pos_down=0`, `pen_pos_up=50`
+- `keyboard_pause = True` enables graceful plot cancellation from another thread
 - Physical constraints (ink bleeding, pen clogging, pressure variation) are intentional creative features, not bugs
-- The agent composes blind — humans should not preview what the agent plans to draw
+- The agent composes blind. Humans should not preview what the agent plans to draw
 
 ## Dependencies
 
-- `mcp[cli]` — FastMCP framework
-- `axicli` — AxiDraw Python API (installed from direct URL, see pyproject.toml)
-- `opencv-python` — webcam capture
-- `openpyxl` — Excel inventory file support
-- `Pillow` — image processing
+- `mcp[cli]` -- FastMCP framework
+- `nextdraw-api` -- NextDraw Python API (installed from direct URL, see pyproject.toml)
+- `opencv-python` -- webcam capture
+- `Pillow` -- image processing
 - Dev: `pytest`, `ruff`
 
 ## Boundaries
 
 **Always:**
 - Run `uv run pytest` and `uv run ruff check .` before considering work done
-- Keep one SVG per pass — do not add multi-layer SVG support
+- Keep one SVG per pass. Do not add multi-layer SVG support
 - Use `uv` for all Python operations (never pip)
 - Add tests for new state machine transitions or utility functions
 

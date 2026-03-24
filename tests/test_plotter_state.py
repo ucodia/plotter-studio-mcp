@@ -1,6 +1,6 @@
 """Tests for PlotterState state machine."""
 
-from monet_mcp.plotter import PlotterState
+from plotter_studio.plotter import PlotterState
 
 
 def test_initial_state_is_idle():

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 from .webhook import _send_webhook
 
-logger = logging.getLogger("monet")
+logger = logging.getLogger("plotter-studio")
 
 
 class PlotterState:
@@ -28,6 +28,7 @@ class PlotterState:
         self._requested_pen: Optional[str] = None
         self._job_start_time: Optional[float] = None
         self._last_completed_svg: Optional[str] = None
+        self._active_plotter: Optional[Any] = None
 
     @property
     def status(self) -> str:
@@ -40,6 +41,29 @@ class PlotterState:
             self._current_job = job_name
             self._job_start_time = time.time()
             self._error = None
+            self._active_plotter = None
+
+    def set_active_plotter(self, plotter: Any):
+        with self._lock:
+            self._active_plotter = plotter
+
+    def cancel_plot(self) -> bool:
+        with self._lock:
+            if self._status != self.PLOTTING or self._active_plotter is None:
+                return False
+            try:
+                import ctypes
+
+                # We store the thread ident when starting the plot
+                if hasattr(self, "_plot_thread_id") and self._plot_thread_id:
+                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                        ctypes.c_ulong(self._plot_thread_id),
+                        ctypes.py_object(KeyboardInterrupt),
+                    )
+                    return True
+                return False
+            except Exception:
+                return False
 
     def finish_plot(self, svg_path: str):
         with self._lock:
@@ -47,12 +71,14 @@ class PlotterState:
             self._last_completed_svg = svg_path
             self._current_job = None
             self._job_start_time = None
+            self._active_plotter = None
 
     def set_error(self, msg: str):
         with self._lock:
             self._status = self.ERROR
             self._error = msg
             self._current_job = None
+            self._active_plotter = None
 
     def request_pen_change(self, pen_description: str):
         with self._lock:
@@ -90,15 +116,15 @@ def _plot_svg_blocking(
 ) -> None:
     """Run a plot synchronously. Called from a background thread."""
     try:
-        from pyaxidraw import axidraw
+        from nextdraw import NextDraw
 
-        ad = axidraw.AxiDraw()
+        ad = NextDraw()
         ad.plot_setup(svg_path)
 
-        # A3 model
-        ad.options.model = 2
+        ad.options.model = options.get("model", 2)
+        ad.options.penlift = options.get("penlift", 3)
+        ad.options.keyboard_pause = True
 
-        # Apply user-specified options
         if "speed_pendown" in options:
             ad.options.speed_pendown = options["speed_pendown"]
         if "speed_penup" in options:
@@ -110,11 +136,33 @@ def _plot_svg_blocking(
         if "accel" in options:
             ad.options.accel = options["accel"]
 
+        plotter_state.set_active_plotter(ad)
+        plotter_state._plot_thread_id = threading.current_thread().ident
         ad.plot_run()
-        plotter_state.finish_plot(svg_path)
-        logger.info(f"Plot complete: {svg_path}")
-        _send_webhook("plot_complete", {"svg_path": svg_path})
 
+        error_code = ad.errors.code if hasattr(ad, "errors") else 0
+        if error_code == 0:
+            plotter_state.finish_plot(svg_path)
+            logger.info(f"Plot complete: {svg_path}")
+            _send_webhook("plot_complete", {"svg_path": svg_path})
+        elif error_code == 102:
+            plotter_state.finish_plot(svg_path)
+            logger.info(f"Plot paused by button: {svg_path}")
+            _send_webhook("plot_paused", {"svg_path": svg_path, "reason": "button"})
+        elif error_code == 103:
+            plotter_state.finish_plot(svg_path)
+            logger.info(f"Plot cancelled: {svg_path}")
+            _send_webhook("plot_cancelled", {"svg_path": svg_path})
+        else:
+            msg = f"NextDraw error code {error_code}"
+            plotter_state.set_error(msg)
+            logger.error(f"Plot error: {msg}")
+            _send_webhook("plot_error", {"svg_path": svg_path, "error": msg})
+
+    except KeyboardInterrupt:
+        plotter_state.finish_plot(svg_path)
+        logger.info(f"Plot cancelled via interrupt: {svg_path}")
+        _send_webhook("plot_cancelled", {"svg_path": svg_path})
     except Exception as e:
         plotter_state.set_error(str(e))
         logger.error(f"Plot error: {e}")

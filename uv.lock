@@ -42,70 +42,6 @@ wheels = [
 ]
 
 [[package]]
-name = "axicli"
-version = "3.9.6"
-source = { url = "https://cdn.evilmadscientist.com/dl/ad/public/AxiDraw_API.zip" }
-dependencies = [
-    { name = "axidrawinternal" },
-    { name = "ink-extensions" },
-    { name = "lxml" },
-    { name = "plotink" },
-    { name = "pyserial" },
-    { name = "requests" },
-]
-sdist = { hash = "sha256:c29ef0792dc8a2006a3a4abcb306e8d7fa5b93f8ce83c0c781eed226d7eeca24" }
-
-[package.metadata]
-requires-dist = [
-    { name = "axidrawinternal", path = "../../.cache/uv/sdists-v9/url/830d08c7eb0413e5/BT8_IeyyoMqljz7IZUjLo/src/prebuilt_dependencies/axidrawinternal-3.9.6-py2.py3-none-any.whl" },
-    { name = "axidrawinternal", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "coverage", marker = "extra == 'dev'" },
-    { name = "coverage", marker = "extra == 'test'" },
-    { name = "hersheyadvanced", marker = "extra == 'hershey'" },
-    { name = "ink-extensions", specifier = ">=1.3.2" },
-    { name = "lxml", specifier = ">=4.9.3" },
-    { name = "mock", marker = "extra == 'dev'" },
-    { name = "mock", marker = "extra == 'test'" },
-    { name = "plotink", specifier = ">=1.8.0" },
-    { name = "pyfakefs", marker = "extra == 'dev'" },
-    { name = "pyfakefs", marker = "extra == 'test'" },
-    { name = "pyserial", specifier = ">=3.5" },
-    { name = "requests" },
-]
-provides-extras = ["dev", "test", "hershey"]
-
-[[package]]
-name = "axidrawinternal"
-version = "3.9.6"
-source = { path = "../../.cache/uv/sdists-v9/url/830d08c7eb0413e5/BT8_IeyyoMqljz7IZUjLo/src/prebuilt_dependencies/axidrawinternal-3.9.6-py2.py3-none-any.whl" }
-dependencies = [
-    { name = "ink-extensions" },
-    { name = "packaging" },
-    { name = "plotink" },
-    { name = "pyclipper" },
-    { name = "requests" },
-    { name = "tqdm" },
-]
-wheels = [
-    { filename = "axidrawinternal-3.9.6-py2.py3-none-any.whl", hash = "sha256:744be32fa64d85adb9dee4d03098af272be4bbf04a0c3dee40b685c3b0d97c4e" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "coverage", marker = "extra == 'dev'" },
-    { name = "hersheyadvanced", marker = "extra == 'hershey'" },
-    { name = "ink-extensions", specifier = ">=2.0.0" },
-    { name = "mock", marker = "extra == 'dev'" },
-    { name = "mock", marker = "extra == 'test'" },
-    { name = "packaging", specifier = ">=21.0" },
-    { name = "plotink", specifier = ">=1.8.0" },
-    { name = "pyclipper", specifier = ">=1.1.0" },
-    { name = "requests", specifier = ">=2.31.0" },
-    { name = "tqdm", specifier = ">=4.64.0" },
-]
-provides-extras = ["dev", "hershey", "test"]
-
-[[package]]
 name = "certifi"
 version = "2026.2.25"
 source = { registry = "https://pypi.org/simple" }
@@ -288,15 +224,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/96/93/682d2b43c1d5f1406ed048f377c0fc9fc8f7b0447a478d5c65ab3d3a66eb/cryptography-46.0.5-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:ced80795227d70549a411a4ab66e8ce307899fad2220ce5ab2f296e687eacde9", size = 4667123, upload-time = "2026-02-10T19:18:15.886Z" },
     { url = "https://files.pythonhosted.org/packages/45/2d/9c5f2926cb5300a8eefc3f4f0b3f3df39db7f7ce40c8365444c49363cbda/cryptography-46.0.5-cp38-abi3-win32.whl", hash = "sha256:02f547fce831f5096c9a567fd41bc12ca8f11df260959ecc7c3202555cc47a72", size = 3010220, upload-time = "2026-02-10T19:18:17.361Z" },
     { url = "https://files.pythonhosted.org/packages/48/ef/0c2f4a8e31018a986949d34a01115dd057bf536905dca38897bacd21fac3/cryptography-46.0.5-cp38-abi3-win_amd64.whl", hash = "sha256:556e106ee01aa13484ce9b0239bca667be5004efb0aabbed28d353df86445595", size = 3467050, upload-time = "2026-02-10T19:18:18.899Z" },
-]
-
-[[package]]
-name = "et-xmlfile"
-version = "2.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54", size = 17234, upload-time = "2024-10-25T17:25:40.039Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa", size = 18059, upload-time = "2024-10-25T17:25:39.051Z" },
 ]
 
 [[package]]
@@ -517,37 +444,69 @@ wheels = [
 ]
 
 [[package]]
-name = "monet-mcp"
-version = "0.1.0"
-source = { editable = "." }
+name = "nextdraw-api"
+version = "1.5.0"
+source = { url = "https://software-download.bantamtools.com/nd/api/nextdraw_api.zip" }
 dependencies = [
-    { name = "axicli" },
-    { name = "mcp", extra = ["cli"] },
-    { name = "opencv-python" },
-    { name = "openpyxl" },
-    { name = "pillow" },
+    { name = "ink-extensions" },
+    { name = "lxml" },
+    { name = "nextdrawcore" },
+    { name = "plotink" },
+    { name = "pyserial" },
+    { name = "requests" },
 ]
+sdist = { hash = "sha256:6f54aa600b5e203924de2ac4a37c450865f7820ec20e6825caf658beb6014c41" }
 
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
+[package.metadata]
+requires-dist = [
+    { name = "coverage", marker = "extra == 'dev'" },
+    { name = "coverage", marker = "extra == 'test'" },
+    { name = "ink-extensions", specifier = ">=2.0.0" },
+    { name = "lxml", specifier = ">=5.2.1" },
+    { name = "mock", marker = "extra == 'dev'" },
+    { name = "mock", marker = "extra == 'test'" },
+    { name = "nextdrawcore", path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/I73WnMAIpv1QwPEzSRKKK/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" },
+    { name = "nextdrawcore", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "plotink", specifier = ">=1.12.0" },
+    { name = "pyfakefs", marker = "extra == 'dev'" },
+    { name = "pyfakefs", marker = "extra == 'test'" },
+    { name = "pyserial", specifier = ">=3.5" },
+    { name = "requests" },
+]
+provides-extras = ["dev", "test"]
+
+[[package]]
+name = "nextdrawcore"
+version = "1.5.0"
+source = { path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/I73WnMAIpv1QwPEzSRKKK/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" }
+dependencies = [
+    { name = "ink-extensions" },
+    { name = "lxml" },
+    { name = "packaging" },
+    { name = "plotink" },
+    { name = "pyclipper" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+wheels = [
+    { filename = "nextdrawcore-1.5.0-py3-none-any.whl", hash = "sha256:856e95748cd65a3421cd451bd6ff983f6a95188754f8695cd27e3931d29de559" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "axicli", url = "https://cdn.evilmadscientist.com/dl/ad/public/AxiDraw_API.zip" },
-    { name = "mcp", extras = ["cli"] },
-    { name = "opencv-python" },
-    { name = "openpyxl" },
-    { name = "pillow" },
+    { name = "coverage", marker = "extra == 'dev'" },
+    { name = "hersheyadvanced", marker = "extra == 'hershey'" },
+    { name = "ink-extensions", specifier = ">=2.1.0" },
+    { name = "lxml", specifier = ">=5.3.0" },
+    { name = "mock", marker = "extra == 'dev'" },
+    { name = "mock", marker = "extra == 'test'" },
+    { name = "packaging", specifier = ">=21.0" },
+    { name = "plotink", specifier = ">=1.12.0" },
+    { name = "pyclipper", specifier = ">=1.3.0.post6" },
+    { name = "requests", specifier = ">=2.31.0" },
+    { name = "tqdm", specifier = ">=4.64.0" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest" },
-    { name = "ruff", specifier = ">=0.15.7" },
-]
+provides-extras = ["dev", "test", "hershey"]
 
 [[package]]
 name = "numpy"
@@ -615,18 +574,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/55/b3b49a1b97aabcfbbd6c7326df9cb0b6fa0c0aefa8e89d500939e04aa229/opencv_python-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:620d602b8f7d8b8dab5f4b99c6eb353e78d3fb8b0f53db1bd258bb1aa001c1d5", size = 72927042, upload-time = "2026-02-05T06:59:23.389Z" },
     { url = "https://files.pythonhosted.org/packages/fb/17/de5458312bcb07ddf434d7bfcb24bb52c59635ad58c6e7c751b48949b009/opencv_python-4.13.0.92-cp37-abi3-win32.whl", hash = "sha256:372fe164a3148ac1ca51e5f3ad0541a4a276452273f503441d718fab9c5e5f59", size = 30932638, upload-time = "2026-02-05T07:02:14.98Z" },
     { url = "https://files.pythonhosted.org/packages/e9/a5/1be1516390333ff9be3a9cb648c9f33df79d5096e5884b5df71a588af463/opencv_python-4.13.0.92-cp37-abi3-win_amd64.whl", hash = "sha256:423d934c9fafb91aad38edf26efb46da91ffbc05f3f59c4b0c72e699720706f5", size = 40212062, upload-time = "2026-02-05T07:02:12.724Z" },
-]
-
-[[package]]
-name = "openpyxl"
-version = "3.1.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "et-xmlfile" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
 ]
 
 [[package]]
@@ -708,6 +655,37 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a1/85/0c757450bd6be7ab5d4bbfba2ac3bff40d5225f1d60bc75817bd9d25b59f/plotink-1.14.2.tar.gz", hash = "sha256:be37ce8fcd1adb2f7ab50fe340a84e28947d597b54968954f0ce17fc970066bb", size = 37581, upload-time = "2026-03-08T05:15:17.503Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/67/b9/b411f08e828d6b12841cdb63a3dc3459b13d8e4391b9b1b35a7fc4f470d0/plotink-1.14.2-py3-none-any.whl", hash = "sha256:b3f556d727866453727ba4f9d4b6877f96de532f97be4e9d8c5d5edb7dbcfaef", size = 46643, upload-time = "2026-03-08T05:15:16.313Z" },
+]
+
+[[package]]
+name = "plotter-studio-mcp"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "mcp", extra = ["cli"] },
+    { name = "nextdraw-api" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mcp", extras = ["cli"] },
+    { name = "nextdraw-api", url = "https://software-download.bantamtools.com/nd/api/nextdraw_api.zip" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "ruff", specifier = ">=0.15.7" },
 ]
 
 [[package]]
