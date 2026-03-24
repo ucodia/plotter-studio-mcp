@@ -108,12 +108,6 @@ If both respond without errors, you're ready to make art.
 | `tool_home` | Return tool carriage to home (0,0) |
 | `notify` | Send a notification to the human operator |
 
-## Coordinate system
-
-- SVG coordinate system: 96 DPI
-- Origin: top-left corner of the paper
-- Tool starts at (0, 0)
-
 ## Environment variables
 
 All configuration uses the `PLOTTER_` prefix:
