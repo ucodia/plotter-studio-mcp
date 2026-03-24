@@ -53,10 +53,8 @@ src/plotter_studio/
     plotter.py      # PlotterState class -- thread-safe state machine for plotter control
     camera.py       # Webcam capture via OpenCV, returns JPEG bytes
     webhook.py      # Push notifications via ntfy.sh or generic JSON webhooks
-    svg_utils.py    # Paper dimension constants (96 DPI), SVG document wrapping
 tests/
-    test_plotter_state.py   # PlotterState state machine transitions (8 tests)
-    test_svg_utils.py       # Paper dimensions and SVG wrapping (5 tests)
+    test_plotter_state.py   # PlotterState state machine transitions (5 tests)
 ```
 
 ## Environment variables
@@ -87,11 +85,10 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 ## Architecture
 
 - **server.py** is the main file. It defines all MCP tools via `@mcp.tool()` decorators and loads config from env vars at startup. Transport is SSE.
-- **PlotterState** in `plotter.py` is a thread-safe state machine (IDLE -> PLOTTING -> IDLE, with WAITING_PEN_CHANGE and ERROR states). Plotting runs in a background thread via `asyncio.to_thread`.
+- **PlotterState** in `plotter.py` is a thread-safe state machine (IDLE -> PLOTTING -> IDLE, with ERROR state). Plotting runs in a background thread via `asyncio.to_thread`.
 - **One SVG per pass**: each plot call takes a single SVG string with one tool/color. Multi-layer artwork is built up across multiple passes.
-- **String-only SVG input**: the `monet_plot_svg` tool receives SVG content as a string parameter. No file paths. If the content is bare elements (not a full document), it gets auto-wrapped with proper paper dimensions.
-- **Capture returns inline images**: `monet_capture` returns a FastMCP `Image(data=bytes, format="jpeg")` content block. Full-resolution JPEG at 80% quality keeps 1080p under 500KB, safely within MCP's 1MB result limit.
-- **Pen change handshake**: two-step process. Agent calls `monet_request_pen_change`, human physically swaps the pen, then agent calls `monet_confirm_pen_change`.
+- **String-only SVG input**: the `plot_start` tool receives a complete SVG document as a string parameter. No file paths. The caller is responsible for producing a valid SVG with correct dimensions.
+- **Capture returns inline images**: `capture` returns a FastMCP `Image(data=bytes, format="jpeg")` content block. Full-resolution JPEG at 80% quality keeps 1080p under 500KB, safely within MCP's 1MB result limit.
 - **Webhooks** are fire-and-forget via daemon threads.
 - **No shared filesystem**: the server is designed to work entirely over the wire. The agent has no direct access to the server's filesystem.
 
@@ -99,18 +96,14 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 
 | Tool | Purpose |
 |---|---|
-| `monet_plot_svg` | Send SVG string to plotter (background, non-blocking) |
-| `monet_preview_svg` | Save SVG to disk without plotting |
-| `monet_get_status` | Check plotter state (idle/plotting/waiting/error) |
-| `monet_stop_plot` | Cancel the current plot gracefully |
-| `monet_request_pen_change` | Ask human to swap pen |
-| `monet_confirm_pen_change` | Confirm pen swap is done |
-| `monet_capture` | Take webcam photo, returns inline JPEG |
-| `monet_get_paper_info` | Get paper dimensions and coordinate info |
-| `monet_move_to` | Move pen to position (pen up) |
-| `monet_pen_up` | Raise the pen |
-| `monet_home` | Return pen carriage to home (0,0) |
-| `monet_notify` | Send notification to human via webhook |
+| `plot_start` | Send SVG string to plotter (background, non-blocking) |
+| `plot_stop` | Cancel the current plot gracefully |
+| `plot_status` | Check plotter state (idle/plotting/error) |
+| `capture` | Take webcam photo, returns inline JPEG |
+| `tool_move` | Move tool to position (tool up) |
+| `tool_raise` | Raise the tool |
+| `tool_home` | Return tool carriage to home (0,0) |
+| `notify` | Send notification to human via webhook |
 
 ## Key domain context
 
@@ -133,7 +126,7 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 ## Boundaries
 
 **Always:**
-- Run `uv run pytest` and `uv run ruff check .` before considering work done
+- Run `uv run ruff format .`, `uv run ruff check .`, and `uv run pytest` before considering work done
 - Keep one SVG per pass. Do not add multi-layer SVG support
 - Use `uv` for all Python operations (never pip)
 - Add tests for new state machine transitions or utility functions

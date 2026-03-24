@@ -4,7 +4,6 @@ import json
 import logging
 import threading
 import urllib.request
-import urllib.error
 from datetime import datetime
 from typing import Any, Dict
 
@@ -14,8 +13,9 @@ logger = logging.getLogger("plotter-studio")
 _WEBHOOK_EVENTS = {
     "plot_started": ("Plot Started", "art,arrow_forward", "3"),
     "plot_complete": ("Plot Complete", "art,white_check_mark", "3"),
+    "plot_paused": ("Plot Paused", "art,pause_button", "4"),
+    "plot_cancelled": ("Plot Cancelled", "art,stop_button", "4"),
     "plot_error": ("Plot Error", "art,x", "5"),
-    "pen_change_requested": ("Pen Change Needed", "pen,raised_hand", "5"),
     "notification": ("Plotter Studio", "speech_balloon", "3"),
 }
 
@@ -38,10 +38,10 @@ def _send_webhook(event: str, data: Dict[str, Any]) -> None:
         return
 
     def _post():
-        title, tags, priority = _WEBHOOK_EVENTS.get(event, ("Plotter Studio", "robot", "3"))
-        message = (
-            data.get("message") or data.get("pen") or data.get("filename") or event
+        title, tags, priority = _WEBHOOK_EVENTS.get(
+            event, ("Plotter Studio", "robot", "3")
         )
+        message = data.get("message") or data.get("filename") or event
 
         is_ntfy = "ntfy" in _webhook_url.lower()
 

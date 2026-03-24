@@ -99,18 +99,14 @@ If both respond without errors, you're ready to make art.
 
 | Tool | What it does |
 |------|-------------|
-| `monet_plot_svg` | Send SVG string to the plotter (background, non-blocking) |
-| `monet_preview_svg` | Save SVG to disk without plotting |
-| `monet_get_status` | Check plotter state (idle/plotting/waiting/error) |
-| `monet_stop_plot` | Cancel the current plot gracefully |
-| `monet_request_pen_change` | Ask human to swap the pen |
-| `monet_confirm_pen_change` | Confirm pen swap is done |
-| `monet_capture` | Take a webcam photo, returns inline JPEG |
-| `monet_get_paper_info` | Get paper dimensions and coordinate info |
-| `monet_move_to` | Move pen to a position (pen up) |
-| `monet_pen_up` | Raise the pen |
-| `monet_home` | Return pen carriage to home (0,0) |
-| `monet_notify` | Send a notification to the human operator |
+| `plot_start` | Send SVG string to the plotter (background, non-blocking) |
+| `plot_stop` | Cancel the current plot gracefully |
+| `plot_status` | Check plotter state (idle/plotting/error) |
+| `capture` | Take a webcam photo, returns inline JPEG |
+| `tool_move` | Move tool to a position (tool up) |
+| `tool_raise` | Raise the tool |
+| `tool_home` | Return tool carriage to home (0,0) |
+| `notify` | Send a notification to the human operator |
 
 ## Paper and coordinate system
 
@@ -153,9 +149,7 @@ src/plotter_studio/
     plotter.py      # AxiDraw control and state machine
     camera.py       # Webcam capture
     webhook.py      # Push notifications
-    svg_utils.py    # SVG wrapping, paper constants
 tests/
-    test_svg_utils.py
     test_plotter_state.py
 ```
 

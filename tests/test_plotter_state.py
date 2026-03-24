@@ -41,57 +41,14 @@ def test_error_state():
     assert info["current_job"] is None
 
 
-def test_pen_change_request_and_confirm():
+def test_cancel_plot_when_idle_returns_false():
     ps = PlotterState()
-
-    ps.request_pen_change("Sakura Micron 0.05mm black")
-    assert ps.status == PlotterState.WAITING_PEN_CHANGE
-    info = ps.get_info()
-    assert info["requested_pen"] == "Sakura Micron 0.05mm black"
-
-    ps.confirm_pen_change()
-    assert ps.status == PlotterState.IDLE
-    info = ps.get_info()
-    assert info["requested_pen"] is None
+    assert ps.cancel_plot() is False
 
 
-def test_pen_change_wait_returns_immediately_after_confirm():
+def test_cancel_plot_without_active_plotter_returns_false():
     ps = PlotterState()
-    ps.request_pen_change("Posca 0.7mm white")
-    ps.confirm_pen_change()
-
-    # Should return True immediately since event is already set
-    assert ps.wait_for_pen_change(timeout=0.1) is True
-
-
-def test_pen_change_wait_times_out():
-    ps = PlotterState()
-    ps.request_pen_change("Posca 0.7mm white")
-
-    # Should time out since nobody confirmed
-    assert ps.wait_for_pen_change(timeout=0.05) is False
-
-
-def test_full_lifecycle():
-    """Test a full plotting cycle: idle -> plot -> idle -> pen change -> idle -> plot -> idle."""
-    ps = PlotterState()
-    assert ps.status == PlotterState.IDLE
-
-    # First plot
-    ps.start_plot("layer1.svg")
+    ps.start_plot("test_job.svg")
+    # No set_active_plotter called, so _active_plotter is None
+    assert ps.cancel_plot() is False
     assert ps.status == PlotterState.PLOTTING
-    ps.finish_plot("/svgs/layer1.svg")
-    assert ps.status == PlotterState.IDLE
-
-    # Pen change
-    ps.request_pen_change("red marker")
-    assert ps.status == PlotterState.WAITING_PEN_CHANGE
-    ps.confirm_pen_change()
-    assert ps.status == PlotterState.IDLE
-
-    # Second plot
-    ps.start_plot("layer2.svg")
-    assert ps.status == PlotterState.PLOTTING
-    ps.finish_plot("/svgs/layer2.svg")
-    assert ps.status == PlotterState.IDLE
-    assert ps.get_info()["last_completed_svg"] == "/svgs/layer2.svg"

@@ -15,7 +15,6 @@ class PlotterState:
 
     IDLE = "idle"
     PLOTTING = "plotting"
-    WAITING_PEN_CHANGE = "waiting_for_pen_change"
     ERROR = "error"
 
     def __init__(self):
@@ -23,9 +22,6 @@ class PlotterState:
         self._status = self.IDLE
         self._current_job: Optional[str] = None
         self._error: Optional[str] = None
-        self._pen_change_event = threading.Event()
-        self._pen_change_event.set()  # Not waiting initially
-        self._requested_pen: Optional[str] = None
         self._job_start_time: Optional[float] = None
         self._last_completed_svg: Optional[str] = None
         self._active_plotter: Optional[Any] = None
@@ -80,28 +76,12 @@ class PlotterState:
             self._current_job = None
             self._active_plotter = None
 
-    def request_pen_change(self, pen_description: str):
-        with self._lock:
-            self._status = self.WAITING_PEN_CHANGE
-            self._requested_pen = pen_description
-            self._pen_change_event.clear()
-
-    def confirm_pen_change(self):
-        with self._lock:
-            self._status = self.IDLE
-            self._requested_pen = None
-            self._pen_change_event.set()
-
-    def wait_for_pen_change(self, timeout: float = 300.0) -> bool:
-        return self._pen_change_event.wait(timeout=timeout)
-
     def get_info(self) -> Dict[str, Any]:
         with self._lock:
             info = {
                 "status": self._status,
                 "current_job": self._current_job,
                 "error": self._error,
-                "requested_pen": self._requested_pen,
                 "last_completed_svg": self._last_completed_svg,
             }
             if self._job_start_time and self._status == self.PLOTTING:
@@ -109,7 +89,7 @@ class PlotterState:
             return info
 
 
-def _plot_svg_blocking(
+def run_plot(
     svg_path: str,
     options: Dict[str, Any],
     plotter_state: PlotterState,
