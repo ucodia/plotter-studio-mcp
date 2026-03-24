@@ -108,12 +108,11 @@ If both respond without errors, you're ready to make art.
 | `tool_home` | Return tool carriage to home (0,0) |
 | `notify` | Send a notification to the human operator |
 
-## Paper and coordinate system
+## Coordinate system
 
-- Paper: 11 x 15 inches, portrait orientation
-- SVG coordinate system: 96 DPI (1056 x 1440 pixels)
+- SVG coordinate system: 96 DPI
 - Origin: top-left corner of the paper
-- Pen starts at (0, 0)
+- Tool starts at (0, 0)
 
 ## Environment variables
 
