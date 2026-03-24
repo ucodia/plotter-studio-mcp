@@ -68,6 +68,7 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 | `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
 | `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
+| `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
 
 ## Testing
 
@@ -107,7 +108,6 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 
 ## Key domain context
 
-- SVG coordinate system: 96 DPI. Default paper: 11 x 15 inches (1056 x 1440 px), portrait, origin at top-left
 - AxiDraw model: V3/A3 (model = 2) with NextDraw firmware
 - `penlift = 3` is required for brushless servo motor
 - Default pen positions: `pen_pos_down=0`, `pen_pos_up=50`
@@ -135,7 +135,6 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 - Adding new MCP tools to server.py
 - Changing the PlotterState state machine
 - Adding new dependencies
-- Modifying the SVG coordinate system or paper defaults
 
 **Never:**
 - Commit .env files or credentials

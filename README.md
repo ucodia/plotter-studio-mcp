@@ -38,14 +38,18 @@ This creates a virtual environment and installs all dependencies (FastMCP, nextd
 Plug in your webcam, then run:
 
 ```bash
-uv run --with cv2-enumerate-cameras python -c "
-from cv2_enumerate_cameras import enumerate_cameras
-for cam in enumerate_cameras():
-    print(f'{cam.index}: {cam.name}')
+uv run python -c "
+import cv2
+for i in range(10):
+    cap = cv2.VideoCapture(i)
+    if cap.isOpened():
+        w, h = int(cap.get(3)), int(cap.get(4))
+        print(f'  {i}: {w}x{h}')
+        cap.release()
 "
 ```
 
-Note the index for your camera. This goes into `PLOTTER_CAMERA` if it is not `0`.
+Set `PLOTTER_CAMERA` to the index you want to use (default is `0`).
 
 ### 3. Run the server
 
@@ -119,6 +123,7 @@ All configuration uses the `PLOTTER_` prefix:
 | `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
 | `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
+| `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
 
 ## Notifications
 

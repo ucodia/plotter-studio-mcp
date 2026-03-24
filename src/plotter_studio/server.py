@@ -37,6 +37,7 @@ WEBHOOK_URL = os.environ.get("PLOTTER_WEBHOOK_URL", "")
 PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
 PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
 CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
+CAMERA_ROTATE = int(os.environ.get("PLOTTER_CAMERA_ROTATE", "0"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -267,7 +268,7 @@ async def capture() -> Image:
     Returns:
         Image: JPEG image content block.
     """
-    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX)
+    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, CAMERA_ROTATE)
     if jpeg_bytes:
         return Image(data=jpeg_bytes, format="jpeg")
     raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
