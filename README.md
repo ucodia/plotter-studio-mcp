@@ -131,14 +131,6 @@ Plotter Studio can send push notifications so you don't have to watch the screen
 
 Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server POSTs a JSON body with `event`, `timestamp`, and event-specific fields.
 
-## Notes on specific pen types
-
-**Posca paint markers**: Need to be pumped before use. A spring on the plotter arm helps with pressure. They can clog when plotting overlapping parallel or near-parallel lines. This is a feature, not a bug.
-
-**Brush pens**: Line weight varies with speed and pressure. The plotter produces consistent pressure, so variation comes from speed changes in the motion plan.
-
-**Fine liners**: Most predictable. Good for detailed base layers. 0.05mm tips can dry out during long plots.
-
 ## Project structure
 
 ```

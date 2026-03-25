@@ -666,6 +666,7 @@ dependencies = [
     { name = "nextdraw-api" },
     { name = "opencv-python" },
     { name = "pillow" },
+    { name = "python-dotenv" },
 ]
 
 [package.dev-dependencies]
@@ -680,6 +681,7 @@ requires-dist = [
     { name = "nextdraw-api", url = "https://software-download.bantamtools.com/nd/api/nextdraw_api.zip" },
     { name = "opencv-python" },
     { name = "pillow" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
 ]
 
 [package.metadata.requires-dev]

@@ -19,12 +19,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP, Image
 from pydantic import BaseModel, ConfigDict, Field
 
 from .camera import capture_frame
 from .plotter import PlotterState, run_plot
 from .webhook import _send_webhook, configure_webhook
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Configuration

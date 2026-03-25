@@ -10,6 +10,7 @@ dependencies = [
     "nextdraw-api @ https://software-download.bantamtools.com/nd/api/nextdraw_api.zip",
     "opencv-python",
     "Pillow",
+    "python-dotenv>=1.2.2",
 ]
 
 [dependency-groups]
