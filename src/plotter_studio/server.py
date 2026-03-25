@@ -34,11 +34,13 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 SVG_DIR = Path(
-    os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("~/plotter-studio/output"))
+    os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("output"))
 )
 WEBHOOK_URL = os.environ.get("PLOTTER_WEBHOOK_URL", "")
 PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
 PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
+PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
+PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
 CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
 CAMERA_ROTATE = int(os.environ.get("PLOTTER_CAMERA_ROTATE", "0"))
 
@@ -84,14 +86,13 @@ class PlotSvgInput(BaseModel):
         ...,
         description=(
             "A complete SVG document string. Must include <svg> root element "
-            "with appropriate width, height, and viewBox attributes. "
-            "Paper is 11x15 inches portrait (1056x1440 px at 96 DPI). "
-            "Origin is top-left. Tool starts at (0,0)."
+            "with width, height, and viewBox attributes defining the paper size "
+            "and coordinate system."
         ),
     )
     filename: Optional[str] = Field(
         default=None,
-        description="Optional filename for the SVG (without path). Auto-generated if omitted.",
+        description="Server-side filename to save the SVG content as (without path, e.g. 'my-art.svg'). Auto-generated if omitted. Do not pass a local file path.",
     )
     speed_pendown: Optional[int] = Field(
         default=25,
@@ -103,18 +104,6 @@ class PlotSvgInput(BaseModel):
         default=75,
         description="Pen-up travel speed as percentage of max (1-100).",
         ge=1,
-        le=100,
-    )
-    pen_pos_down: Optional[int] = Field(
-        default=0,
-        description="Pen-down height as percentage (0=lowest). Adjust for pen/marker type.",
-        ge=0,
-        le=100,
-    )
-    pen_pos_up: Optional[int] = Field(
-        default=50,
-        description="Pen-up height as percentage (100=highest).",
-        ge=0,
         le=100,
     )
     accel: Optional[int] = Field(
@@ -139,9 +128,6 @@ async def plot_start(params: PlotSvgInput) -> str:
     """Send an SVG to the AxiDraw for plotting. The plot runs in the background.
     Use plot_status to check progress. Only one plot can run at a time.
 
-    The paper is 11x15 inches portrait, 96 DPI (1056x1440 px).
-    Pen starts at the top-left corner of the paper.
-
     Args:
         params (PlotSvgInput): SVG content and plotter settings.
 
@@ -161,15 +147,16 @@ async def plot_start(params: PlotSvgInput) -> str:
     svg_path = SVG_DIR / filename
     svg_path.write_text(svg, encoding="utf-8")
 
-    options = {"model": PLOTTER_MODEL, "penlift": PLOTTER_PENLIFT}
+    options = {
+        "model": PLOTTER_MODEL,
+        "penlift": PLOTTER_PENLIFT,
+        "pen_pos_down": PLOTTER_PEN_POS_DOWN,
+        "pen_pos_up": PLOTTER_PEN_POS_UP,
+    }
     if params.speed_pendown is not None:
         options["speed_pendown"] = params.speed_pendown
     if params.speed_penup is not None:
         options["speed_penup"] = params.speed_penup
-    if params.pen_pos_down is not None:
-        options["pen_pos_down"] = params.pen_pos_down
-    if params.pen_pos_up is not None:
-        options["pen_pos_up"] = params.pen_pos_up
     if params.accel is not None:
         options["accel"] = params.accel
 

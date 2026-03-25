@@ -11,7 +11,7 @@ logger = logging.getLogger("plotter-studio")
 def capture_frame(camera_index: int, rotate_degrees: int = 0) -> Optional[bytes]:
     """Capture a single frame from a webcam, return as JPEG bytes.
 
-    Returns full-resolution JPEG at 80% quality (keeps 1080p under ~500KB).
+    Returns full-resolution JPEG at 90% quality (keeps 1080p under ~500KB).
     """
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
@@ -35,7 +35,7 @@ def capture_frame(camera_index: int, rotate_degrees: int = 0) -> Optional[bytes]
                 f"PLOTTER_CAMERA_ROTATE={rotate_degrees} is not a multiple of 90, ignoring rotation"
             )
 
-        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
         return buf.tobytes()
     finally:
         cap.release()
