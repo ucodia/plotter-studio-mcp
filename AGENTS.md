@@ -49,9 +49,10 @@ The MCP server runs over SSE on localhost. Claude Desktop connects through mcp-r
 
 ```
 src/plotter_studio/
-    server.py       # MCP server entry point, all tool definitions, config loading
+    server.py       # MCP server entry point, all tool definitions, HTTP routes, config loading
     plotter.py      # PlotterState class -- thread-safe state machine for plotter control
     camera.py       # Webcam capture via OpenCV, returns JPEG bytes
+    filestore.py    # Temp file store for HTTP file transfers (upload/download)
     webhook.py      # Push notifications via ntfy.sh or generic JSON webhooks
 tests/
     test_plotter_state.py   # PlotterState state machine transitions (5 tests)
@@ -71,6 +72,7 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
 | `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
+| `PLOTTER_HTTP_BASE_URL` | `http://localhost:8000` | Base URL for HTTP file transfer endpoints |
 
 ## Testing
 
@@ -90,8 +92,9 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 - **server.py** is the main file. It defines all MCP tools via `@mcp.tool()` decorators and loads config from env vars at startup. Transport is SSE.
 - **PlotterState** in `plotter.py` is a thread-safe state machine (IDLE -> PLOTTING -> IDLE, with ERROR state). Plotting runs in a background thread via `asyncio.to_thread`.
 - **One SVG per pass**: each plot call takes a single SVG string with one tool/color. Multi-layer artwork is built up across multiple passes.
-- **String-only SVG input**: the `plot_start` tool receives a complete SVG document as a string parameter. No file paths. The caller is responsible for producing a valid SVG with correct dimensions.
-- **Capture returns inline images**: `capture` returns a FastMCP `Image(data=bytes, format="jpeg")` content block. Full-resolution JPEG at 80% quality keeps 1080p under 500KB, safely within MCP's 1MB result limit.
+- **HTTP file transfer**: SVGs are uploaded via `POST /files` and captures are downloaded via `GET /files/{id}`. This side-channels large data around the MCP context window. Only SVG uploads are accepted.
+- **File-based SVG input**: the `plot_start` tool receives a `svg_file_id` referencing a previously uploaded SVG. The caller uploads the SVG via HTTP first, then passes the returned ID. The caller is responsible for producing a valid SVG with correct dimensions.
+- **Capture returns file references**: `capture` saves the JPEG to the file store and returns a JSON object with `file_id` and a full `url` for HTTP download.
 - **Webhooks** are fire-and-forget via daemon threads.
 - **No shared filesystem**: the server is designed to work entirely over the wire. The agent has no direct access to the server's filesystem.
 
@@ -99,10 +102,11 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 
 | Tool | Purpose |
 |---|---|
-| `plot_start` | Send SVG string to plotter (background, non-blocking) |
+| `server_info` | Get HTTP base URL and file transfer endpoints |
+| `plot_start` | Plot an uploaded SVG by file ID (background, non-blocking) |
 | `plot_stop` | Cancel the current plot gracefully |
 | `plot_status` | Check plotter state (idle/plotting/error) |
-| `capture` | Take webcam photo, returns inline JPEG |
+| `capture` | Take webcam photo, returns file reference for HTTP download |
 | `tool_move` | Move tool to position (tool up) |
 | `tool_raise` | Raise the tool |
 | `tool_home` | Return tool carriage to home (0,0) |

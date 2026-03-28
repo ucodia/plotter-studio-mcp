@@ -20,10 +20,14 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP, Image
+from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
+from starlette.requests import Request
+from starlette.responses import FileResponse, JSONResponse
+
 from .camera import capture_frame
+from .filestore import get_file, store_file
 from .plotter import PlotterState, run_plot
 from .webhook import _send_webhook, configure_webhook
 
@@ -33,9 +37,7 @@ load_dotenv()
 # Configuration
 # ---------------------------------------------------------------------------
 
-SVG_DIR = Path(
-    os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("output"))
-)
+SVG_DIR = Path(os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("output")))
 WEBHOOK_URL = os.environ.get("PLOTTER_WEBHOOK_URL", "")
 PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
 PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
@@ -43,6 +45,9 @@ PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
 CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
 CAMERA_ROTATE = int(os.environ.get("PLOTTER_CAMERA_ROTATE", "0"))
+HTTP_BASE_URL = os.environ.get("PLOTTER_HTTP_BASE_URL", "http://localhost:8000").rstrip(
+    "/"
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,25 +79,51 @@ async def app_lifespan(server: FastMCP):
 
 mcp = FastMCP("plotter-studio", lifespan=app_lifespan)
 
+# ---- File transfer routes --------------------------------------------------
+
+
+@mcp.custom_route("/files", methods=["POST"])
+async def upload_file(request: Request):
+    form = await request.form()
+    upload = form["file"]
+    filename = upload.filename or "upload"
+    if not filename.lower().endswith(".svg"):
+        return JSONResponse({"error": "Only SVG files are accepted."}, status_code=400)
+    data = await upload.read()
+    file_id = store_file(data, filename, "image/svg+xml")
+    return JSONResponse(
+        {
+            "id": file_id,
+            "filename": filename,
+            "url": f"{HTTP_BASE_URL}/files/{file_id}",
+        }
+    )
+
+
+@mcp.custom_route("/files/{file_id}", methods=["GET"])
+async def download_file(request: Request):
+    file_id = request.path_params["file_id"]
+    result = get_file(file_id)
+    if result is None:
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    path, filename, content_type = result
+    return FileResponse(path, media_type=content_type, filename=filename)
+
+
 # ---- Plotting tools -------------------------------------------------------
 
 
 class PlotSvgInput(BaseModel):
     """Input for plotting an SVG."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-    svg_content: str = Field(
+    svg_file_id: str = Field(
         ...,
         description=(
-            "A complete SVG document string. Must include <svg> root element "
-            "with width, height, and viewBox attributes defining the paper size "
-            "and coordinate system."
+            "File id of an SVG previously uploaded via POST /files. "
+            "Upload your SVG first, then pass the returned id here."
         ),
-    )
-    filename: Optional[str] = Field(
-        default=None,
-        description="Server-side filename to save the SVG content as (without path, e.g. 'my-art.svg'). Auto-generated if omitted. Do not pass a local file path.",
     )
     speed_pendown: Optional[int] = Field(
         default=25,
@@ -125,25 +156,25 @@ class PlotSvgInput(BaseModel):
     },
 )
 async def plot_start(params: PlotSvgInput) -> str:
-    """Send an SVG to the AxiDraw for plotting. The plot runs in the background.
-    Use plot_status to check progress. Only one plot can run at a time.
-
-    Args:
-        params (PlotSvgInput): SVG content and plotter settings.
-
-    Returns:
-        str: JSON with job status and saved SVG path.
+    """Upload your SVG via POST /files first, then pass the returned file id here.
+    The plot runs in the background. Use plot_status to check progress.
+    Only one plot can run at a time.
     """
     if plotter_state.status == PlotterState.PLOTTING:
         return json.dumps(
             {"error": "A plot is already running. Wait for it to finish."}
         )
 
-    svg = params.svg_content.strip()
+    result = get_file(params.svg_file_id)
+    if result is None:
+        return json.dumps({"error": f"File not found: {params.svg_file_id}"})
+    src_path, orig_filename, _ct = result
+    svg = src_path.read_text(encoding="utf-8").strip()
 
-    filename = params.filename or f"plot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
-    if not filename.endswith(".svg"):
-        filename += ".svg"
+    if orig_filename and orig_filename.endswith(".svg"):
+        filename = orig_filename
+    else:
+        filename = f"plot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg"
     svg_path = SVG_DIR / filename
     svg_path.write_text(svg, encoding="utf-8")
 
@@ -238,6 +269,34 @@ async def plot_stop() -> str:
         )
 
 
+# ---- Server info -----------------------------------------------------------
+
+
+@mcp.tool(
+    name="server_info",
+    annotations={
+        "title": "Get server connection info",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+)
+async def server_info() -> str:
+    """Returns the HTTP base URL and available endpoints for file upload/download.
+    Call this once at the start of a session to learn where to send files.
+    """
+    return json.dumps(
+        {
+            "http_base_url": HTTP_BASE_URL,
+            "endpoints": {
+                "upload": "POST /files",
+                "download": "GET /files/{id}",
+            },
+        }
+    )
+
+
 # ---- Camera tools ----------------------------------------------------------
 
 
@@ -251,17 +310,18 @@ async def plot_stop() -> str:
         "openWorldHint": True,
     },
 )
-async def capture() -> Image:
+async def capture() -> str:
     """Capture a photo from the webcam to see the current state of the paper.
-    Returns a full-resolution JPEG image inline.
+    Returns a file reference. Retrieve the full image via GET /files/{id}.
 
     Returns:
-        Image: JPEG image content block.
+        str: JSON with file_id and url for the captured JPEG.
     """
     jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, CAMERA_ROTATE)
-    if jpeg_bytes:
-        return Image(data=jpeg_bytes, format="jpeg")
-    raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
+    if not jpeg_bytes:
+        raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
+    file_id = store_file(jpeg_bytes, "capture.jpg", "image/jpeg")
+    return json.dumps({"file_id": file_id, "url": f"{HTTP_BASE_URL}/files/{file_id}"})
 
 
 # ---- Tool control ----------------------------------------------------------

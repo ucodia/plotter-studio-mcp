@@ -103,10 +103,11 @@ If both respond without errors, you're ready to make art.
 
 | Tool | What it does |
 |------|-------------|
-| `plot_start` | Send SVG string to the plotter (background, non-blocking) |
+| `server_info` | Get HTTP base URL and file transfer endpoints |
+| `plot_start` | Plot an uploaded SVG by file ID (background, non-blocking) |
 | `plot_stop` | Cancel the current plot gracefully |
 | `plot_status` | Check plotter state (idle/plotting/error) |
-| `capture` | Take a webcam photo, returns inline JPEG |
+| `capture` | Take a webcam photo, returns file reference for HTTP download |
 | `tool_move` | Move tool to a position (tool up) |
 | `tool_raise` | Raise the tool |
 | `tool_home` | Return tool carriage to home (0,0) |
@@ -126,6 +127,7 @@ All configuration uses the `PLOTTER_` prefix:
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
 | `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
+| `PLOTTER_HTTP_BASE_URL` | `http://localhost:8000` | Base URL for HTTP file transfer endpoints |
 
 ## Notifications
 
@@ -137,9 +139,10 @@ Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server P
 
 ```
 src/plotter_studio/
-    server.py       # MCP server, tool definitions, config
+    server.py       # MCP server, tool definitions, HTTP routes, config
     plotter.py      # AxiDraw control and state machine
     camera.py       # Webcam capture
+    filestore.py    # Temp file store for HTTP file transfers
     webhook.py      # Push notifications
 tests/
     test_plotter_state.py
