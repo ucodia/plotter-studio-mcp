@@ -49,7 +49,7 @@ for i in range(10):
 "
 ```
 
-Set `PLOTTER_CAMERA` to the index you want to use (default is `0`).
+Set `CAMERA_INDEX` to the index you want to use (default is `0`).
 
 ### 3. Run the server
 
@@ -115,25 +115,25 @@ If both respond without errors, you're ready to make art.
 
 ## Environment variables
 
-All configuration uses the `PLOTTER_` prefix:
+All configuration is via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PLOTTER_SVG_DIR` | `output` | Directory where SVG files are saved |
-| `PLOTTER_WEBHOOK_URL` | (empty) | Webhook URL for push notifications (supports ntfy.sh) |
+| `SVG_DIR` | `output` | Directory where SVG files are saved |
+| `WEBHOOK_URL` | (empty) | Webhook URL for push notifications (supports ntfy.sh) |
 | `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
 | `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
 | `PLOTTER_PEN_POS_DOWN` | `0` | Pen-down servo position as percentage (0=lowest) |
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
-| `PLOTTER_CAMERA` | `0` | Webcam device index |
+| `CAMERA_INDEX` | `0` | Webcam device index |
 | `CAMERA_ROTATE_LANDSCAPE` | `0` | Camera rotation in degrees for landscape orientation |
 | `CAMERA_ROTATE_PORTRAIT` | `90` | Camera rotation in degrees for portrait orientation |
 | `MCP_PORT` | `8888` | Port for the MCP SSE server |
-| `PLOTTER_HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
+| `HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
 
 ## Notifications
 
-Plotter Studio can send push notifications so you don't have to watch the screen while it plots. Set `PLOTTER_WEBHOOK_URL` to a [ntfy.sh](https://ntfy.sh) topic URL and subscribe on your phone. You'll get pinged when a plot starts, finishes, errors, or when the agent needs you to swap a pen.
+Plotter Studio can send push notifications so you don't have to watch the screen while it plots. Set `WEBHOOK_URL` to a [ntfy.sh](https://ntfy.sh) topic URL and subscribe on your phone. You'll get pinged when a plot starts, finishes, errors, or when the agent needs you to swap a pen.
 
 Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server POSTs a JSON body with `event`, `timestamp`, and event-specific fields.
 

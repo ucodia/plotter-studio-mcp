@@ -37,18 +37,18 @@ load_dotenv()
 # Configuration
 # ---------------------------------------------------------------------------
 
-SVG_DIR = Path(os.environ.get("PLOTTER_SVG_DIR", os.path.expanduser("output")))
-WEBHOOK_URL = os.environ.get("PLOTTER_WEBHOOK_URL", "")
+SVG_DIR = Path(os.environ.get("SVG_DIR", os.path.expanduser("output")))
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
 PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
 PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
 PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
-CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
+CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
 CAMERA_ROTATE_LANDSCAPE = int(os.environ.get("CAMERA_ROTATE_LANDSCAPE", "0"))
 CAMERA_ROTATE_PORTRAIT = int(os.environ.get("CAMERA_ROTATE_PORTRAIT", "90"))
 MCP_PORT = int(os.environ.get("MCP_PORT", "8888"))
 HTTP_BASE_URL = os.environ.get(
-    "PLOTTER_HTTP_BASE_URL", f"http://localhost:{MCP_PORT}"
+    "HTTP_BASE_URL", f"http://localhost:{MCP_PORT}"
 ).rstrip("/")
 
 logging.basicConfig(

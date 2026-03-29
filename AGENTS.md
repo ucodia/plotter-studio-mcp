@@ -64,17 +64,17 @@ All configuration is via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PLOTTER_SVG_DIR` | `~/plotter-studio/output` | Directory where SVG files are saved |
-| `PLOTTER_WEBHOOK_URL` | (empty) | Webhook URL for notifications (supports ntfy.sh) |
+| `SVG_DIR` | `output` | Directory where SVG files are saved |
+| `WEBHOOK_URL` | (empty) | Webhook URL for notifications (supports ntfy.sh) |
 | `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
 | `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
 | `PLOTTER_PEN_POS_DOWN` | `0` | Pen-down servo position as percentage (0=lowest) |
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
-| `PLOTTER_CAMERA` | `0` | Webcam device index |
+| `CAMERA_INDEX` | `0` | Webcam device index |
 | `CAMERA_ROTATE_LANDSCAPE` | `0` | Camera rotation in degrees for landscape orientation |
 | `CAMERA_ROTATE_PORTRAIT` | `90` | Camera rotation in degrees for portrait orientation |
 | `MCP_PORT` | `8888` | Port for the MCP SSE server |
-| `PLOTTER_HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
+| `HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
 
 ## Testing
 
