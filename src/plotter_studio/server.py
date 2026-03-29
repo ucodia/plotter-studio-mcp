@@ -45,9 +45,10 @@ PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
 CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
 CAMERA_ROTATE = int(os.environ.get("PLOTTER_CAMERA_ROTATE", "0"))
-HTTP_BASE_URL = os.environ.get("PLOTTER_HTTP_BASE_URL", "http://localhost:8000").rstrip(
-    "/"
-)
+MCP_PORT = int(os.environ.get("MCP_PORT", "8888"))
+HTTP_BASE_URL = os.environ.get(
+    "PLOTTER_HTTP_BASE_URL", f"http://localhost:{MCP_PORT}"
+).rstrip("/")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,7 +78,11 @@ async def app_lifespan(server: FastMCP):
 # MCP Server
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP("plotter-studio", lifespan=app_lifespan)
+mcp = FastMCP(
+    "plotter-studio",
+    lifespan=app_lifespan,
+    port=MCP_PORT,
+)
 
 # ---- File transfer routes --------------------------------------------------
 

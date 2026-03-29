@@ -37,7 +37,7 @@ The MCP server runs over SSE on localhost. Claude Desktop connects through mcp-r
             "command": "npx",
             "args": [
                 "mcp-remote@latest",
-                "http://127.0.0.1:8000/sse",
+                "http://127.0.0.1:8888/sse",
                 "--allow-http"
             ]
         }
@@ -60,7 +60,7 @@ tests/
 
 ## Environment variables
 
-All configuration is via environment variables with `PLOTTER_` prefix:
+All configuration is via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
@@ -72,7 +72,8 @@ All configuration is via environment variables with `PLOTTER_` prefix:
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
 | `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
-| `PLOTTER_HTTP_BASE_URL` | `http://localhost:8000` | Base URL for HTTP file transfer endpoints |
+| `MCP_PORT` | `8888` | Port for the MCP SSE server |
+| `PLOTTER_HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
 
 ## Testing
 

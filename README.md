@@ -54,10 +54,10 @@ Set `PLOTTER_CAMERA` to the index you want to use (default is `0`).
 ### 3. Run the server
 
 ```bash
-uv run plotter-studio --transport sse
+uv run plotter-studio
 ```
 
-This starts the MCP server over SSE at `http://127.0.0.1:8000/sse`.
+This starts the MCP server over SSE at `http://127.0.0.1:8888/sse`.
 
 ### 4. Configure Claude Desktop
 
@@ -75,7 +75,7 @@ Add the `plotter-studio` server:
             "command": "npx",
             "args": [
                 "mcp-remote@latest",
-                "http://127.0.0.1:8000/sse",
+                "http://127.0.0.1:8888/sse",
                 "--allow-http"
             ]
         }
@@ -119,7 +119,7 @@ All configuration uses the `PLOTTER_` prefix:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PLOTTER_SVG_DIR` | `~/plotter-studio/output` | Directory where SVG files are saved |
+| `PLOTTER_SVG_DIR` | `output` | Directory where SVG files are saved |
 | `PLOTTER_WEBHOOK_URL` | (empty) | Webhook URL for push notifications (supports ntfy.sh) |
 | `PLOTTER_MODEL` | `2` | NextDraw model number (2 = AxiDraw V3/A3) |
 | `PLOTTER_PENLIFT` | `3` | Pen lift type (3 = brushless servo) |
@@ -127,7 +127,8 @@ All configuration uses the `PLOTTER_` prefix:
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
 | `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
-| `PLOTTER_HTTP_BASE_URL` | `http://localhost:8000` | Base URL for HTTP file transfer endpoints |
+| `MCP_PORT` | `8888` | Port for the MCP SSE server |
+| `PLOTTER_HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
 
 ## Notifications
 
