@@ -32,7 +32,7 @@ def capture_frame(camera_index: int, rotate_degrees: int = 0) -> Optional[bytes]
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         elif angle != 0:
             logger.warning(
-                f"PLOTTER_CAMERA_ROTATE={rotate_degrees} is not a multiple of 90, ignoring rotation"
+                f"Camera rotation {rotate_degrees} is not a multiple of 90, ignoring"
             )
 
         _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])

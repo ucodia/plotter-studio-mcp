@@ -44,7 +44,8 @@ PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
 PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
 CAMERA_INDEX = int(os.environ.get("PLOTTER_CAMERA", "0"))
-CAMERA_ROTATE = int(os.environ.get("PLOTTER_CAMERA_ROTATE", "0"))
+CAMERA_ROTATE_LANDSCAPE = int(os.environ.get("CAMERA_ROTATE_LANDSCAPE", "0"))
+CAMERA_ROTATE_PORTRAIT = int(os.environ.get("CAMERA_ROTATE_PORTRAIT", "90"))
 MCP_PORT = int(os.environ.get("MCP_PORT", "8888"))
 HTTP_BASE_URL = os.environ.get(
     "PLOTTER_HTTP_BASE_URL", f"http://localhost:{MCP_PORT}"
@@ -315,14 +316,21 @@ async def server_info() -> str:
         "openWorldHint": True,
     },
 )
-async def capture() -> str:
+async def capture(orientation: str = "portrait") -> str:
     """Capture a photo from the webcam to see the current state of the paper.
     Returns a file reference. Retrieve the full image via GET /files/{id}.
+
+    Args:
+        orientation: Image orientation, either "landscape" or "portrait".
 
     Returns:
         str: JSON with file_id and url for the captured JPEG.
     """
-    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, CAMERA_ROTATE)
+    if orientation == "portrait":
+        rotate = CAMERA_ROTATE_PORTRAIT
+    else:
+        rotate = CAMERA_ROTATE_LANDSCAPE
+    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, rotate)
     if not jpeg_bytes:
         raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
     file_id = store_file(jpeg_bytes, "capture.jpg", "image/jpeg")

@@ -71,7 +71,8 @@ All configuration is via environment variables:
 | `PLOTTER_PEN_POS_DOWN` | `0` | Pen-down servo position as percentage (0=lowest) |
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `PLOTTER_CAMERA` | `0` | Webcam device index |
-| `PLOTTER_CAMERA_ROTATE` | `0` | Rotate camera output in degrees (0, 90, 180, 270) |
+| `CAMERA_ROTATE_LANDSCAPE` | `0` | Camera rotation in degrees for landscape orientation |
+| `CAMERA_ROTATE_PORTRAIT` | `90` | Camera rotation in degrees for portrait orientation |
 | `MCP_PORT` | `8888` | Port for the MCP SSE server |
 | `PLOTTER_HTTP_BASE_URL` | `http://localhost:{MCP_PORT}` | Base URL for HTTP file transfer endpoints |
 
