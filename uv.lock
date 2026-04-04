@@ -465,7 +465,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=5.2.1" },
     { name = "mock", marker = "extra == 'dev'" },
     { name = "mock", marker = "extra == 'test'" },
-    { name = "nextdrawcore", path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/utzYwdqh8P-Dvi6EJydiV/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" },
+    { name = "nextdrawcore", path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/4rz8iAqmWd7CKgZTcjm7Y/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" },
     { name = "nextdrawcore", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "plotink", specifier = ">=1.12.0" },
     { name = "pyfakefs", marker = "extra == 'dev'" },
@@ -478,7 +478,7 @@ provides-extras = ["dev", "test"]
 [[package]]
 name = "nextdrawcore"
 version = "1.5.0"
-source = { path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/utzYwdqh8P-Dvi6EJydiV/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" }
+source = { path = "../../.cache/uv/sdists-v9/url/76d0e1b0ec673f3d/4rz8iAqmWd7CKgZTcjm7Y/src/prebuilt_dependencies/nextdrawcore-1.5.0-py3-none-any.whl" }
 dependencies = [
     { name = "ink-extensions" },
     { name = "lxml" },

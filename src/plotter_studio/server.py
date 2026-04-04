@@ -47,9 +47,10 @@ CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
 CAMERA_ROTATE_LANDSCAPE = int(os.environ.get("CAMERA_ROTATE_LANDSCAPE", "0"))
 CAMERA_ROTATE_PORTRAIT = int(os.environ.get("CAMERA_ROTATE_PORTRAIT", "90"))
 MCP_PORT = int(os.environ.get("MCP_PORT", "8888"))
-HTTP_BASE_URL = os.environ.get(
-    "HTTP_BASE_URL", f"http://localhost:{MCP_PORT}"
-).rstrip("/")
+MCP_HOST = "0.0.0.0" if "--host" in sys.argv else "127.0.0.1"
+HTTP_BASE_URL = os.environ.get("HTTP_BASE_URL", f"http://localhost:{MCP_PORT}").rstrip(
+    "/"
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,11 +80,7 @@ async def app_lifespan(server: FastMCP):
 # MCP Server
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP(
-    "plotter-studio",
-    lifespan=app_lifespan,
-    port=MCP_PORT,
-)
+mcp = FastMCP("plotter-studio", lifespan=app_lifespan, host=MCP_HOST, port=MCP_PORT)
 
 # ---- File transfer routes --------------------------------------------------
 

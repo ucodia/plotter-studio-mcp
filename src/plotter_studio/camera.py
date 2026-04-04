@@ -8,15 +8,21 @@ import cv2
 logger = logging.getLogger("plotter-studio")
 
 
-def capture_frame(camera_index: int, rotate_degrees: int = 0) -> Optional[bytes]:
+def capture_frame(
+    camera_index: int,
+    rotate_degrees: int = 0,
+) -> Optional[bytes]:
     """Capture a single frame from a webcam, return as JPEG bytes.
 
-    Returns full-resolution JPEG at 90% quality (keeps 1080p under ~500KB).
+    Requests the maximum resolution the camera supports and returns
+    a JPEG at 90% quality.
     """
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
         return None
     try:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 10000)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 10000)
         for _ in range(5):
             cap.read()
         ret, frame = cap.read()
