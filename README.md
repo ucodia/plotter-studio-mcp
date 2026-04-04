@@ -51,13 +51,25 @@ for i in range(10):
 
 Set `CAMERA_INDEX` to the index you want to use (default is `0`).
 
+**Raspberry Pi note:** The pip `opencv-python-headless` wheel may lack V4L2 support on ARM. If the camera is detected by `lsusb` but OpenCV can't open it, install the system package and recreate the venv with system site-packages:
+
+```bash
+sudo apt install python3-opencv
+uv venv --system-site-packages --python python3
+uv sync
+```
+
 ### 3. Run the server
 
 ```bash
 uv run plotter-studio
 ```
 
-This starts the MCP server over SSE at `http://127.0.0.1:8888/sse`.
+This starts the MCP server over SSE at `http://127.0.0.1:8888/sse`. To listen on all interfaces (e.g. when running on a remote Pi), pass `--host`:
+
+```bash
+uv run plotter-studio --host
+```
 
 ### 4. Configure Claude Desktop
 
