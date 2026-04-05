@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse
 
-from .camera import capture_frame
+from .camera import capture_frame, capture_gphoto2
 from .filestore import get_file, store_file
 from .plotter import PlotterState, run_plot
 from .webhook import _send_webhook, configure_webhook
@@ -43,6 +43,7 @@ PLOTTER_MODEL = int(os.environ.get("PLOTTER_MODEL", "2"))
 PLOTTER_PENLIFT = int(os.environ.get("PLOTTER_PENLIFT", "3"))
 PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
+CAMERA_BACKEND = os.environ.get("CAMERA_BACKEND", "opencv")
 CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
 CAMERA_ROTATE_LANDSCAPE = int(os.environ.get("CAMERA_ROTATE_LANDSCAPE", "0"))
 CAMERA_ROTATE_PORTRAIT = int(os.environ.get("CAMERA_ROTATE_PORTRAIT", "90"))
@@ -303,6 +304,20 @@ async def server_info() -> str:
 # ---- Camera tools ----------------------------------------------------------
 
 
+async def _capture_bytes(orientation: str) -> bytes:
+    """Shared capture logic for both capture tools."""
+    rotate = (
+        CAMERA_ROTATE_PORTRAIT if orientation == "portrait" else CAMERA_ROTATE_LANDSCAPE
+    )
+    if CAMERA_BACKEND == "gphoto2":
+        jpeg_bytes = await asyncio.to_thread(capture_gphoto2, rotate)
+    else:
+        jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, rotate)
+    if not jpeg_bytes:
+        raise ValueError(f"Failed to capture (backend={CAMERA_BACKEND}).")
+    return jpeg_bytes
+
+
 @mcp.tool(
     name="capture",
     annotations={
@@ -323,13 +338,7 @@ async def capture(orientation: str = "portrait") -> str:
     Returns:
         str: JSON with file_id and url for the captured JPEG.
     """
-    if orientation == "portrait":
-        rotate = CAMERA_ROTATE_PORTRAIT
-    else:
-        rotate = CAMERA_ROTATE_LANDSCAPE
-    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, rotate)
-    if not jpeg_bytes:
-        raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
+    jpeg_bytes = await _capture_bytes(orientation)
     file_id = store_file(jpeg_bytes, "capture.jpg", "image/jpeg")
     return json.dumps({"file_id": file_id, "url": f"{HTTP_BASE_URL}/files/{file_id}"})
 
@@ -354,13 +363,7 @@ async def capture_image(orientation: str = "portrait") -> Image:
     Returns:
         Image: The captured JPEG image.
     """
-    if orientation == "portrait":
-        rotate = CAMERA_ROTATE_PORTRAIT
-    else:
-        rotate = CAMERA_ROTATE_LANDSCAPE
-    jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, rotate)
-    if not jpeg_bytes:
-        raise ValueError(f"Failed to capture from camera (index {CAMERA_INDEX}).")
+    jpeg_bytes = await _capture_bytes(orientation)
     return Image(data=jpeg_bytes, format="jpeg")
 
 

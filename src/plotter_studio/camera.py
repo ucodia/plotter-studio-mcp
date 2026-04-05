@@ -1,9 +1,13 @@
-"""Webcam capture logic."""
+"""Webcam and gphoto2 capture logic."""
 
 import logging
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Optional
 
 import cv2
+from PIL import Image
 
 logger = logging.getLogger("plotter-studio")
 
@@ -45,3 +49,59 @@ def capture_frame(
         return buf.tobytes()
     finally:
         cap.release()
+
+
+def _rotate_jpeg(data: bytes, rotate_degrees: int) -> bytes:
+    """Rotate JPEG bytes using Pillow and return as JPEG."""
+    import io
+
+    angle = rotate_degrees % 360
+    if angle == 0:
+        return data
+
+    img = Image.open(io.BytesIO(data))
+    # PIL rotates counter-clockwise, so negate for clockwise
+    img = img.rotate(-angle, expand=True)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    return buf.getvalue()
+
+
+def capture_gphoto2(rotate_degrees: int = 0) -> Optional[bytes]:
+    """Capture a still frame via gphoto2, return as JPEG bytes."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        outpath = Path(tmpdir) / "capture.jpg"
+        try:
+            result = subprocess.run(
+                [
+                    "gphoto2",
+                    "--capture-image-and-download",
+                    "--filename",
+                    str(outpath),
+                    "--force-overwrite",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except FileNotFoundError:
+            logger.error("gphoto2 is not installed")
+            return None
+        except subprocess.TimeoutExpired:
+            logger.error("gphoto2 capture timed out")
+            return None
+
+        if result.returncode != 0:
+            logger.error(f"gphoto2 failed: {result.stderr.strip()}")
+            return None
+
+        # gphoto2 may save multiple files (JPG + RAW), find the JPEG
+        jpeg_files = list(Path(tmpdir).glob("*.jpg"))
+        if not jpeg_files:
+            logger.error("gphoto2 did not produce a JPEG file")
+            return None
+
+        data = jpeg_files[0].read_bytes()
+        if rotate_degrees % 360 != 0:
+            data = _rotate_jpeg(data, rotate_degrees)
+        return data
