@@ -18,7 +18,7 @@ Plotter Studio connects AI agents to an AxiDraw pen plotter and a webcam via the
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
 - Python 3.13+
 - AxiDraw pen plotter (V3/A3 with NextDraw firmware)
-- USB webcam
+- USB webcam or gphoto2-compatible camera (e.g. Sony A7III)
 - Node.js 18+ (for [mcp-remote](https://www.npmjs.com/package/mcp-remote))
 
 ## Quick start
@@ -33,9 +33,13 @@ uv sync
 
 This creates a virtual environment and installs all dependencies (FastMCP, nextdraw-api, OpenCV, Pillow).
 
-### 2. Find your camera index
+### 2. Set up a camera
 
-Plug in your webcam, then run:
+Plotter Studio supports two camera backends: OpenCV (USB webcams) and gphoto2 (tethered cameras like Sony, Canon, Nikon).
+
+#### Option A: USB webcam (default)
+
+Plug in your webcam, then find its device index:
 
 ```bash
 uv run python -c "
@@ -58,6 +62,24 @@ sudo apt install python3-opencv
 uv venv --system-site-packages --python python3
 uv sync
 ```
+
+#### Option B: gphoto2 (tethered camera)
+
+For higher quality captures, you can use a tethered camera via gphoto2. This works with many Sony, Canon, and Nikon cameras connected over USB.
+
+Install gphoto2:
+
+```bash
+sudo apt install gphoto2
+```
+
+Set your camera to PC Remote USB mode (the exact menu path varies by model), connect it via USB, and verify detection:
+
+```bash
+gphoto2 --auto-detect
+```
+
+Then set `CAMERA_BACKEND=gphoto2` in your `.env` file. Captures will be slower (a few seconds per shot) but image quality will be significantly better. Set your camera to JPG-only (no RAW) to speed up transfers.
 
 ### 3. Run the server
 
@@ -119,7 +141,8 @@ If both respond without errors, you're ready to make art.
 | `plot_start` | Plot an uploaded SVG by file ID (background, non-blocking) |
 | `plot_stop` | Cancel the current plot gracefully |
 | `plot_status` | Check plotter state (idle/plotting/error) |
-| `capture` | Take a webcam photo, returns file reference for HTTP download |
+| `capture` | Take a photo, returns file reference for HTTP download |
+| `capture_image` | Take a photo, returns image directly as MCP image content |
 | `tool_move` | Move tool to a position (tool up) |
 | `tool_raise` | Raise the tool |
 | `tool_home` | Return tool carriage to home (0,0) |
@@ -157,7 +180,7 @@ Generic JSON webhooks also work. If the URL doesn't contain "ntfy", the server P
 src/plotter_studio/
     server.py       # MCP server, tool definitions, HTTP routes, config
     plotter.py      # AxiDraw control and state machine
-    camera.py       # Webcam capture
+    camera.py       # Webcam and gphoto2 capture
     filestore.py    # Temp file store for HTTP file transfers
     webhook.py      # Push notifications
 tests/
