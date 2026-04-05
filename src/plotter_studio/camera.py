@@ -15,11 +15,11 @@ logger = logging.getLogger("plotter-studio")
 def capture_frame(
     camera_index: int,
     rotate_degrees: int = 0,
+    quality: int = 90,
 ) -> Optional[bytes]:
     """Capture a single frame from a webcam, return as JPEG bytes.
 
-    Requests the maximum resolution the camera supports and returns
-    a JPEG at 90% quality.
+    Requests the maximum resolution the camera supports.
     """
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
@@ -45,39 +45,39 @@ def capture_frame(
                 f"Camera rotation {rotate_degrees} is not a multiple of 90, ignoring"
             )
 
-        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
         return buf.tobytes()
     finally:
         cap.release()
 
 
-def _rotate_jpeg(data: bytes, rotate_degrees: int) -> bytes:
-    """Rotate JPEG bytes using Pillow and return as JPEG."""
+def _recompress_jpeg(data: bytes, rotate_degrees: int = 0, quality: int = 90) -> bytes:
+    """Re-encode JPEG at the given quality, optionally rotating."""
     import io
 
-    angle = rotate_degrees % 360
-    if angle == 0:
-        return data
-
     img = Image.open(io.BytesIO(data))
-    # PIL rotates counter-clockwise, so negate for clockwise
-    img = img.rotate(-angle, expand=True)
+    angle = rotate_degrees % 360
+    if angle != 0:
+        # PIL rotates counter-clockwise, so negate for clockwise
+        img = img.rotate(-angle, expand=True)
     buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=90)
+    img.save(buf, format="JPEG", quality=quality)
     return buf.getvalue()
 
 
-def capture_gphoto2(rotate_degrees: int = 0) -> Optional[bytes]:
+def capture_gphoto2(rotate_degrees: int = 0, quality: int = 90) -> Optional[bytes]:
     """Capture a still frame via gphoto2, return as JPEG bytes."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        outpath = Path(tmpdir) / "capture.jpg"
+        # Use %f.%C to preserve original filenames and extensions so
+        # JPG and RAW files don't overwrite each other
+        filename_pattern = str(Path(tmpdir) / "%f.%C")
         try:
             result = subprocess.run(
                 [
                     "gphoto2",
                     "--capture-image-and-download",
                     "--filename",
-                    str(outpath),
+                    filename_pattern,
                     "--force-overwrite",
                 ],
                 capture_output=True,
@@ -96,12 +96,15 @@ def capture_gphoto2(rotate_degrees: int = 0) -> Optional[bytes]:
             return None
 
         # gphoto2 may save multiple files (JPG + RAW), find the JPEG
-        jpeg_files = list(Path(tmpdir).glob("*.jpg"))
+        jpeg_files = [
+            f
+            for f in Path(tmpdir).iterdir()
+            if f.suffix.lower() in (".jpg", ".jpeg")
+        ]
         if not jpeg_files:
             logger.error("gphoto2 did not produce a JPEG file")
             return None
 
         data = jpeg_files[0].read_bytes()
-        if rotate_degrees % 360 != 0:
-            data = _rotate_jpeg(data, rotate_degrees)
+        data = _recompress_jpeg(data, rotate_degrees, quality)
         return data

@@ -139,6 +139,7 @@ All configuration is via environment variables:
 | `PLOTTER_PEN_POS_UP` | `50` | Pen-up servo position as percentage (100=highest) |
 | `CAMERA_BACKEND` | `opencv` | Capture backend: `opencv` for webcams, `gphoto2` for tethered cameras |
 | `CAMERA_INDEX` | `0` | Webcam device index (opencv backend only) |
+| `JPEG_QUALITY` | `90` | JPEG output quality (1-100) |
 | `CAMERA_ROTATE_LANDSCAPE` | `0` | Camera rotation in degrees for landscape orientation |
 | `CAMERA_ROTATE_PORTRAIT` | `90` | Camera rotation in degrees for portrait orientation |
 | `MCP_PORT` | `8888` | Port for the MCP SSE server |

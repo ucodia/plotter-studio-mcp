@@ -45,6 +45,7 @@ PLOTTER_PEN_POS_DOWN = int(os.environ.get("PLOTTER_PEN_POS_DOWN", "0"))
 PLOTTER_PEN_POS_UP = int(os.environ.get("PLOTTER_PEN_POS_UP", "50"))
 CAMERA_BACKEND = os.environ.get("CAMERA_BACKEND", "opencv")
 CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
+JPEG_QUALITY = int(os.environ.get("JPEG_QUALITY", "90"))
 CAMERA_ROTATE_LANDSCAPE = int(os.environ.get("CAMERA_ROTATE_LANDSCAPE", "0"))
 CAMERA_ROTATE_PORTRAIT = int(os.environ.get("CAMERA_ROTATE_PORTRAIT", "90"))
 MCP_PORT = int(os.environ.get("MCP_PORT", "8888"))
@@ -310,9 +311,11 @@ async def _capture_bytes(orientation: str) -> bytes:
         CAMERA_ROTATE_PORTRAIT if orientation == "portrait" else CAMERA_ROTATE_LANDSCAPE
     )
     if CAMERA_BACKEND == "gphoto2":
-        jpeg_bytes = await asyncio.to_thread(capture_gphoto2, rotate)
+        jpeg_bytes = await asyncio.to_thread(capture_gphoto2, rotate, JPEG_QUALITY)
     else:
-        jpeg_bytes = await asyncio.to_thread(capture_frame, CAMERA_INDEX, rotate)
+        jpeg_bytes = await asyncio.to_thread(
+            capture_frame, CAMERA_INDEX, rotate, JPEG_QUALITY
+        )
     if not jpeg_bytes:
         raise ValueError(f"Failed to capture (backend={CAMERA_BACKEND}).")
     return jpeg_bytes
