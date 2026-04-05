@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP, Image
+from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from starlette.requests import Request
@@ -344,30 +344,6 @@ async def capture(orientation: str = "portrait") -> str:
     jpeg_bytes = await _capture_bytes(orientation)
     file_id = store_file(jpeg_bytes, "capture.jpg", "image/jpeg")
     return json.dumps({"file_id": file_id, "url": f"{HTTP_BASE_URL}/files/{file_id}"})
-
-
-@mcp.tool(
-    name="capture_image",
-    annotations={
-        "title": "Capture image from webcam (inline)",
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": False,
-        "openWorldHint": True,
-    },
-)
-async def capture_image(orientation: str = "portrait") -> Image:
-    """Capture a photo from the webcam to see the current state of the paper.
-    Returns the image directly as MCP image content.
-
-    Args:
-        orientation: Image orientation, either "landscape" or "portrait".
-
-    Returns:
-        Image: The captured JPEG image.
-    """
-    jpeg_bytes = await _capture_bytes(orientation)
-    return Image(data=jpeg_bytes, format="jpeg")
 
 
 # ---- Tool control ----------------------------------------------------------

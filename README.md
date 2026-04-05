@@ -142,7 +142,6 @@ If both respond without errors, you're ready to make art.
 | `plot_stop` | Cancel the current plot gracefully |
 | `plot_status` | Check plotter state (idle/plotting/error) |
 | `capture` | Take a photo, returns file reference for HTTP download |
-| `capture_image` | Take a photo, returns image directly as MCP image content |
 | `tool_move` | Move tool to a position (tool up) |
 | `tool_raise` | Raise the tool |
 | `tool_home` | Return tool carriage to home (0,0) |
