@@ -70,14 +70,16 @@ def _rotate_jpeg(data: bytes, rotate_degrees: int) -> bytes:
 def capture_gphoto2(rotate_degrees: int = 0) -> Optional[bytes]:
     """Capture a still frame via gphoto2, return as JPEG bytes."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        outpath = Path(tmpdir) / "capture.jpg"
+        # Use %f.%C to preserve original filenames and extensions so
+        # JPG and RAW files don't overwrite each other
+        filename_pattern = str(Path(tmpdir) / "%f.%C")
         try:
             result = subprocess.run(
                 [
                     "gphoto2",
                     "--capture-image-and-download",
                     "--filename",
-                    str(outpath),
+                    filename_pattern,
                     "--force-overwrite",
                 ],
                 capture_output=True,
@@ -96,7 +98,11 @@ def capture_gphoto2(rotate_degrees: int = 0) -> Optional[bytes]:
             return None
 
         # gphoto2 may save multiple files (JPG + RAW), find the JPEG
-        jpeg_files = list(Path(tmpdir).glob("*.jpg"))
+        jpeg_files = [
+            f
+            for f in Path(tmpdir).iterdir()
+            if f.suffix.lower() in (".jpg", ".jpeg")
+        ]
         if not jpeg_files:
             logger.error("gphoto2 did not produce a JPEG file")
             return None
