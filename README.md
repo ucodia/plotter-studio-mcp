@@ -17,9 +17,10 @@ Plotter Studio connects AI agents to an AxiDraw pen plotter and a webcam via the
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
 - Python 3.13+
-- AxiDraw pen plotter (V3/A3 with NextDraw firmware)
-- USB webcam or gphoto2-compatible camera (e.g. Sony A7III)
+- AxiDraw or NextDraw pen plotter (NextDraw firmware)
+- USB webcam or [gphoto2](http://gphoto.org/)-compatible camera (e.g. Sony A7III)
 - Node.js 18+ (for [mcp-remote](https://www.npmjs.com/package/mcp-remote))
+- [gphoto2](http://gphoto.org/) (optional, for tethered camera backend)
 
 ## Quick start
 
@@ -70,6 +71,10 @@ For higher quality captures, you can use a tethered camera via gphoto2. This wor
 Install gphoto2:
 
 ```bash
+# macOS
+brew install gphoto2
+
+# Debian/Ubuntu/Raspberry Pi OS
 sudo apt install gphoto2
 ```
 
